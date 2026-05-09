@@ -39,25 +39,21 @@ func (app *application) view(ctx *gin.Context) {
 type CreateTask struct {
 	Title      string `form:"title" json:"title" binding:"required,min=2"`
 	Text       string `form:"text" json:"text" binding:"omitempty,min=1"`
-	Priority   string `form:"priority" json:"priority" binding:"omitempty,oneof=high middle low"`
-	ExpireDays int    `form:"expires" json:"expires" binding:"omitempty,gte=1,lte=365"`
+	Priority   string `form:"priority" json:"priority" binding:"oneof=high middle low"`
+	ExpireDays int    `form:"expires" json:"expires" binding:"gte=1,lte=365"`
 }
 
 func (app *application) insert(ctx *gin.Context) {
-	var task CreateTask
+	var task = CreateTask{Priority: "middle", ExpireDays: 7}
 	if err := ctx.ShouldBind(&task); err != nil {
 		app.badRequet(ctx, err)
 		return
 	}
-	if task.Priority == "" {
-		task.Priority = "middle"
-	}
-	if task.ExpireDays == 0 {
-		task.ExpireDays = 7
-	}
+
 	id, err := app.tasks.Insert(task.Title, task.Text, task.Priority, task.ExpireDays)
 	if err != nil {
 		app.serverError(ctx, err)
+		return
 	}
 	ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/tasks/%v", id))
 }
@@ -71,6 +67,7 @@ func (app *application) delete(ctx *gin.Context) {
 	err = app.tasks.Delete(id)
 	if err != nil {
 		app.serverError(ctx, err)
+		return
 	}
 	ctx.Redirect(http.StatusSeeOther, "/")
 }
