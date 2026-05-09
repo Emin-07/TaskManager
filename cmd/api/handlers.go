@@ -1,10 +1,12 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 
+	"github.com/Emin-07/TaskManager/internal/models"
 	"github.com/gin-gonic/gin"
 )
 
@@ -21,10 +23,15 @@ func (app *application) view(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
 		app.badRequetDetailed(ctx, "The 'id' parameter must be an integer", "received: '%v'", ctx.Param("id"))
+		return
 	}
 	task, err := app.tasks.Get(id)
 	if err != nil {
-		app.serverError(ctx, err)
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(ctx, "There is no task with id: '%v'", id)
+		} else {
+
+		}
 	}
 	ctx.JSON(http.StatusOK, gin.H{"task": task})
 }
@@ -74,10 +81,12 @@ func (app *application) refreshTasks(ctx *gin.Context) {
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil {
 		app.badRequetDetailed(ctx, "The 'limit' query parameter must be an integer", "received: %v'", limitStr)
+		return
 	}
 	refreshAmount, err := strconv.Atoi(refreshAmountStr)
 	if err != nil {
 		app.badRequetDetailed(ctx, "The 'days' query parameter must be an integer", "received: %v'", refreshAmountStr)
+		return
 	}
 
 	app.tasks.RefreshTasks(limit, refreshAmount)

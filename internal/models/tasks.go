@@ -1,6 +1,8 @@
 package models
 
 import (
+	"database/sql"
+	"errors"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -32,7 +34,11 @@ func (m *TaskModel) Get(id int) (*Task, error) {
 	task := Task{}
 	err := m.DB.Get(&task, "SELECT * FROM tasks WHERE id = ?", id)
 	if err != nil {
-		return nil, err
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, ErrNoRecord
+		} else {
+			return nil, err
+		}
 	}
 	return &task, nil
 }

@@ -26,6 +26,6 @@ func (app *application) badRequet(ctx *gin.Context, err error) {
 	ctx.AbortWithStatusJSON(http.StatusBadRequest, gin.H{"Error": err.Error()})
 }
 
-func (app *application) notFound(ctx *gin.Context) {
-	ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"Error": http.StatusText(http.StatusNotFound)})
+func (app *application) notFound(ctx *gin.Context, detailFormat string, a ...any) {
+	ctx.AbortWithStatusJSON(http.StatusNotFound, gin.H{"Error": http.StatusText(http.StatusNotFound), "detail": fmt.Sprintf(detailFormat, a...)})
 }
