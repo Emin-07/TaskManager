@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -56,6 +57,54 @@ func (m *TaskModel) Insert(title, text, priority string, expireDays int) (int64,
 		return 0, err
 	}
 	return id, nil
+}
+
+func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
+	if *isNotFirst {
+		query.WriteString(`, `)
+	} else {
+		*isNotFirst = true
+	}
+}
+
+func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) error {
+	var query strings.Builder
+	var args []any
+	var isNotFirst bool
+	query.WriteString("UPDATE tasks SET ")
+	if title != "" {
+		isNotFirst = true
+		query.WriteString(`title = ? `)
+		args = append(args, title)
+	}
+	if text != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(`text = ? `)
+		args = append(args, text)
+	}
+	if priority != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(`priority = ? `)
+		args = append(args, priority)
+	}
+	if expireDays != 0 {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(`expires = DATE_ADD(NOW(), INTERVAL ? DAY) `)
+		args = append(args, expireDays)
+	}
+	if len(args) == 0 {
+		return ErrNoData
+	}
+	args = append(args, id)
+	query.WriteString("WHERE id = ?")
+
+	_, err := m.DB.Exec(query.String(), args...)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *TaskModel) Delete(id int) error {

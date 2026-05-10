@@ -36,15 +36,36 @@ func (app *application) view(ctx *gin.Context) {
 	app.JSON(ctx, http.StatusOK, gin.H{"task": task})
 }
 
-type CreateTask struct {
-	Title      string `form:"title" json:"title" binding:"required,min=2"`
-	Text       string `form:"text" json:"text" binding:"omitempty,min=1"`
-	Priority   string `form:"priority" json:"priority" binding:"oneof=high middle low"`
-	ExpireDays int    `form:"expires" json:"expires" binding:"gte=1,lte=365"`
+type Task struct {
+	Title      string `form:"title" json:"title" binding:"omitempty,min=2"`
+	Text       string `form:"text" json:"text" binding:"omitempty,min=2"`
+	Priority   string `form:"priority" json:"priority" binding:"omitempty,oneof=high middle low"`
+	ExpireDays int    `form:"expires" json:"expires" binding:"omitempty,gte=1,lte=365"`
+}
+
+func (app *application) patch(ctx *gin.Context) {
+	id, err := strconv.Atoi(ctx.Param("id"))
+	if err != nil {
+		app.badRequestDetailed(ctx, "The 'id' parameter must be an integer", "received: '%v'", ctx.Param("id"))
+		return
+	}
+	var task = Task{}
+	if err := ctx.ShouldBind(&task); err != nil {
+		app.badRequest(ctx, err)
+		return
+	}
+
+	err = app.tasks.Patch(task.Title, task.Text, task.Priority, id, task.ExpireDays)
+	if err != nil {
+		app.serverError(ctx, err)
+		return
+	}
+
+	ctx.Redirect(http.StatusSeeOther, fmt.Sprintf("/tasks/%v", id))
 }
 
 func (app *application) insert(ctx *gin.Context) {
-	var task = CreateTask{Priority: "middle", ExpireDays: 7}
+	var task = Task{Priority: "middle", ExpireDays: 7}
 	if err := ctx.ShouldBind(&task); err != nil {
 		app.badRequest(ctx, err)
 		return

@@ -18,7 +18,7 @@ type application struct {
 }
 
 func main() {
-	readableJSON := flag.Bool("readable", false, "Makes JSON in API's better structured for human to read")
+	readableJSON := flag.Bool("readable", true, "Makes JSON in API's better structured for human to read")
 	infoLog := log.New(os.Stdin, "INFO: \t", log.LUTC|log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR: \t", log.LUTC|log.Ldate|log.Ltime|log.Lshortfile)
 	db, err := openDB("todo:mysql@/todoApp?parseTime=true")
@@ -56,3 +56,4 @@ func openDB(dsn string) (*sqlx.DB, error) {
 // log in log out sign in
 
 // id, text, created, expires 1day
+// TODO: add env files to handle dsn
