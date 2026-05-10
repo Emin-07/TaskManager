@@ -15,14 +15,14 @@ func (app *application) home(ctx *gin.Context) {
 	if err != nil {
 		app.serverError(ctx, err)
 	}
-	ctx.JSON(http.StatusOK, gin.H{"tasks": tasks})
+	app.JSON(ctx, http.StatusOK, gin.H{"tasks": tasks})
 
 }
 
 func (app *application) view(ctx *gin.Context) {
 	id, err := strconv.Atoi(ctx.Param("id"))
 	if err != nil {
-		app.badRequetDetailed(ctx, "The 'id' parameter must be an integer", "received: '%v'", ctx.Param("id"))
+		app.badRequestDetailed(ctx, "The 'id' parameter must be an integer", "received: '%v'", ctx.Param("id"))
 		return
 	}
 	task, err := app.tasks.Get(id)
@@ -33,7 +33,7 @@ func (app *application) view(ctx *gin.Context) {
 
 		}
 	}
-	ctx.JSON(http.StatusOK, gin.H{"task": task})
+	app.JSON(ctx, http.StatusOK, gin.H{"task": task})
 }
 
 type CreateTask struct {
@@ -46,7 +46,7 @@ type CreateTask struct {
 func (app *application) insert(ctx *gin.Context) {
 	var task = CreateTask{Priority: "middle", ExpireDays: 7}
 	if err := ctx.ShouldBind(&task); err != nil {
-		app.badRequet(ctx, err)
+		app.badRequest(ctx, err)
 		return
 	}
 
@@ -72,21 +72,19 @@ func (app *application) delete(ctx *gin.Context) {
 	ctx.Redirect(http.StatusSeeOther, "/")
 }
 
+type TaskQueryParams struct {
+	Limit int `form:"limit" binding:"omitempty,gte=1" default:"9999999"`
+	Days  int `form:"days" binding:"omitempty,gte=1,lte=365" default:"7"`
+}
+
 func (app *application) refreshTasks(ctx *gin.Context) {
-	limitStr := ctx.DefaultQuery("limit", "99999999")
-	refreshAmountStr := ctx.DefaultQuery("days", "7")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		app.badRequetDetailed(ctx, "The 'limit' query parameter must be an integer", "received: %v'", limitStr)
-		return
-	}
-	refreshAmount, err := strconv.Atoi(refreshAmountStr)
-	if err != nil {
-		app.badRequetDetailed(ctx, "The 'days' query parameter must be an integer", "received: %v'", refreshAmountStr)
+	var queryParams TaskQueryParams
+	if err := ctx.ShouldBindQuery(&queryParams); err != nil {
+		app.badRequest(ctx, err)
 		return
 	}
 
-	app.tasks.RefreshTasks(limit, refreshAmount)
+	app.tasks.RefreshTasks(queryParams.Limit, queryParams.Days)
 
 	ctx.Redirect(http.StatusSeeOther, "/")
 }

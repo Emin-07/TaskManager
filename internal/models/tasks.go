@@ -66,7 +66,8 @@ func (m *TaskModel) Delete(id int) error {
 	return nil
 }
 func (m *TaskModel) RefreshTasks(limit, days int) error {
-	_, err := m.DB.Exec("UPDATE tasks SET expires = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id < ?", days, limit)
+	// _, err := m.DB.Exec("UPDATE tasks SET expires = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id < ? AND expires < UTC_TIMESTAMP()", days, limit)
+	_, err := m.DB.Exec("UPDATE tasks SET expires = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id < ? ", days, limit)
 	if err != nil {
 		return err
 	}

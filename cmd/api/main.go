@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 
@@ -10,24 +11,29 @@ import (
 )
 
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	tasks    *models.TaskModel
+	errorLog     *log.Logger
+	infoLog      *log.Logger
+	tasks        *models.TaskModel
+	readableJSON bool
 }
 
 func main() {
+	readableJSON := flag.Bool("readable", false, "Makes JSON in API's better structured for human to read")
 	infoLog := log.New(os.Stdin, "INFO: \t", log.LUTC|log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR: \t", log.LUTC|log.Ldate|log.Ltime|log.Lshortfile)
 	db, err := openDB("todo:mysql@/todoApp?parseTime=true")
+
+	flag.Parse()
 
 	if err != nil {
 		errorLog.Fatal(err)
 	}
 
 	app := application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		tasks:    &models.TaskModel{DB: db},
+		errorLog:     errorLog,
+		infoLog:      infoLog,
+		tasks:        &models.TaskModel{DB: db},
+		readableJSON: *readableJSON,
 	}
 
 	app.router().Run()
