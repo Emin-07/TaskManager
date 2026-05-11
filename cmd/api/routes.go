@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io/fs"
 	"net/http"
 	"text/template"
 
@@ -25,8 +26,8 @@ func (app *application) router() *gin.Engine {
 	router.POST("/tasks", app.insert)
 	router.POST("/tasks/refresh", app.refreshTasks)
 
-	// cssFS, _ := fs.Sub(ui.Files, "css")
-	router.Static("/static", "./ui/static")
+	staticFiles, _ := fs.Sub(ui.Files, "static")
+	router.StaticFS("static", http.FS(staticFiles))
 
 	return router
 }
