@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="../static/css/style.css">
+  <title>Tasks</title>
+</head>
+<body>
+  <header>
+    <h2>Latest Tasks</h2>
+  </header>
+  <main>
+    {{if .tasks}}
+    <table>
+        <tr>
+            <th>Title</th>
+            <th>Text</th>
+            <th>Priority</th>
+            <th>Created</th>
+            <th>Expires</th>
+            <th>ID</th>
+        </tr>
+        {{range .tasks}}
+        <tr>
+            <td><a href="/tasks/{{.Id}}">{{.Title}}</a></td>
+            <td>{{.Text}}</td>
+            <td>{{.Priority}}</td>
+            <td>{{.Created | humanDate}}</td>
+            <td>{{.Expires | humanDate}}</td>
+            <td>#{{.Id}}</td>
+        </tr>
+        {{end}}
+    </table>
+    {{else}}
+        <p>There is nothing to see here... yet!</p>
+    {{end}}
+  </main>
+  <footer></footer>
+</body>
+</html>

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"runtime/debug"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,4 +37,12 @@ func (app *application) JSON(ctx *gin.Context, code int, obj any) {
 	} else {
 		ctx.JSON(code, obj)
 	}
+}
+
+func humanDate(t time.Time) string {
+	if t.IsZero() {
+		return ""
+	}
+
+	return t.UTC().Format("02 Jan 2006 at 15:04")
 }

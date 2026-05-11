@@ -11,6 +11,15 @@ import (
 )
 
 func (app *application) home(ctx *gin.Context) {
+
+	tasks, err := app.tasks.Latest()
+	if err != nil {
+		app.serverError(ctx, err)
+		return
+	}
+	ctx.HTML(http.StatusOK, "index.html", gin.H{"tasks": tasks})
+}
+func (app *application) homeJSON(ctx *gin.Context) {
 	tasks, err := app.tasks.Latest()
 	if err != nil {
 		app.serverError(ctx, err)

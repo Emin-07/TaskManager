@@ -19,6 +19,8 @@ type application struct {
 
 func main() {
 	readableJSON := flag.Bool("readable", true, "Makes JSON in API's better structured for human to read")
+	port := flag.String("addr", ":8080", "Specify address of the api, like :8080")
+
 	infoLog := log.New(os.Stdin, "INFO: \t", log.LUTC|log.Ldate|log.Ltime)
 	errorLog := log.New(os.Stderr, "ERROR: \t", log.LUTC|log.Ldate|log.Ltime|log.Lshortfile)
 	db, err := openDB("todo:mysql@/todoApp?parseTime=true")
@@ -36,7 +38,7 @@ func main() {
 		readableJSON: *readableJSON,
 	}
 
-	app.router().Run()
+	app.router().Run(*port)
 }
 
 func openDB(dsn string) (*sqlx.DB, error) {
