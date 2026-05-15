@@ -2,38 +2,35 @@ package main
 
 import (
 	"flag"
-	"log"
-	"os"
 
 	"github.com/Emin-07/TaskManager/internal/models"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
+	"go.uber.org/zap"
 )
 
 type application struct {
-	errorLog     *log.Logger
-	infoLog      *log.Logger
+	logger       *zap.Logger
 	tasks        *models.TaskModel
 	readableJSON bool
 }
 
 func main() {
+	logger, _ := zap.NewDevelopment()
+	defer logger.Sync()
+
 	readableJSON := flag.Bool("readable", true, "Makes JSON in API's better structured for human to read")
 	port := flag.String("addr", ":8080", "Specify address of the api, like :8080")
-
-	infoLog := log.New(os.Stdin, "INFO: \t", log.LUTC|log.Ldate|log.Ltime)
-	errorLog := log.New(os.Stderr, "ERROR: \t", log.LUTC|log.Ldate|log.Ltime|log.Lshortfile)
 	db, err := openDB("todo:mysql@/todoApp?parseTime=true")
 
 	flag.Parse()
 
 	if err != nil {
-		errorLog.Fatal(err)
+		logger.Error("Failed to open database", zap.Error(err))
 	}
 
 	app := application{
-		errorLog:     errorLog,
-		infoLog:      infoLog,
+		logger:       logger,
 		tasks:        &models.TaskModel{DB: db},
 		readableJSON: *readableJSON,
 	}

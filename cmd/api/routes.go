@@ -12,6 +12,8 @@ import (
 func (app *application) router() *gin.Engine {
 	router := gin.Default()
 
+	router.Use(SetSecureHeaders(), app.ErrorHandler())
+
 	router.SetFuncMap(template.FuncMap{
 		"humanDate": humanDate,
 	})

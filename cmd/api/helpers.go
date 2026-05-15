@@ -7,11 +7,12 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 func (app *application) serverError(ctx *gin.Context, err error) {
 	trace := fmt.Sprintf("%s\n%s", err.Error(), debug.Stack())
-	app.errorLog.Output(2, trace)
+	app.logger.Error("server error", zap.String("trace", trace))
 	ctx.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"Error": trace})
 }
 
