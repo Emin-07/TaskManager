@@ -3,6 +3,7 @@ package models
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -16,6 +17,7 @@ type Task struct {
 	Priority string    `db:"priority"`
 	Created  time.Time `db:"created"`
 	Expires  time.Time `db:"expires"`
+	UserId   int       `db:"user_id"`
 }
 
 type TaskModel struct {
@@ -37,16 +39,15 @@ func (m *TaskModel) Get(id int) (*Task, error) {
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
-		} else {
-			return nil, err
 		}
+		return nil, err
 	}
 	return &task, nil
 }
 
-func (m *TaskModel) Insert(title, text, priority string, expireDays int) (int64, error) {
-	query := `INSERT INTO tasks (title, text, priority, expires) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY))`
-	res, err := m.DB.Exec(query, title, text, priority, expireDays)
+func (m *TaskModel) Insert(title, text, priority string, expireDays, userId int) (int64, error) {
+	query := `INSERT INTO tasks (title, text, priority, expires, user_id) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), ?)`
+	res, err := m.DB.Exec(query, title, text, priority, expireDays, userId)
 
 	if err != nil {
 		return 0, err
@@ -67,16 +68,21 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) error {
+func funcName(title, title_sql string, isNotFirst bool, query strings.Builder, args []any) (bool, []any) {
+	if title != "" {
+		isNotFirst = true
+		query.WriteString(fmt.Sprintf("%s = ?", title_sql))
+		args = append(args, title)
+	}
+	return isNotFirst, args
+}
+
+func (m *TaskModel) Patch(title, text, priority string, id, userId, expireDays int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
 	query.WriteString("UPDATE tasks SET ")
-	if title != "" {
-		isNotFirst = true
-		query.WriteString(`title = ? `)
-		args = append(args, title)
-	}
+	isNotFirst, args = funcName(title, "title", isNotFirst, query, args)
 	if text != "" {
 		queryOrderTracker(&query, &isNotFirst)
 		query.WriteString(`text = ? `)
@@ -86,6 +92,11 @@ func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) erro
 		queryOrderTracker(&query, &isNotFirst)
 		query.WriteString(`priority = ? `)
 		args = append(args, priority)
+	}
+	if userId != 0 {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(`user_id = ? `)
+		args = append(args, userId)
 	}
 	if expireDays != 0 {
 		queryOrderTracker(&query, &isNotFirst)
