@@ -8,6 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func (app *application) serverError(ctx *gin.Context, err error) {
@@ -38,6 +39,16 @@ func (app *application) JSON(ctx *gin.Context, code int, obj any) {
 	} else {
 		ctx.JSON(code, obj)
 	}
+}
+
+func (app *application) HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
+
+func (app *application) CheckPasswordHash(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
 }
 
 func humanDate(t time.Time) string {

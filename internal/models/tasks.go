@@ -3,7 +3,6 @@ package models
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -68,21 +67,16 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func funcName(title, title_sql string, isNotFirst bool, query strings.Builder, args []any) (bool, []any) {
-	if title != "" {
-		isNotFirst = true
-		query.WriteString(fmt.Sprintf("%s = ?", title_sql))
-		args = append(args, title)
-	}
-	return isNotFirst, args
-}
-
 func (m *TaskModel) Patch(title, text, priority string, id, userId, expireDays int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
 	query.WriteString("UPDATE tasks SET ")
-	isNotFirst, args = funcName(title, "title", isNotFirst, query, args)
+	if title != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(`title = ?`)
+		args = append(args, title)
+	}
 	if text != "" {
 		queryOrderTracker(&query, &isNotFirst)
 		query.WriteString(`text = ? `)
