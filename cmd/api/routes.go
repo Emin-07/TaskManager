@@ -19,9 +19,14 @@ func (app *application) router() *gin.Engine {
 	})
 
 	router.LoadHTMLFS(http.FS(ui.Files), "**/*.html")
-
 	router.GET("/", app.home)
 	router.GET("/json", app.homeJSON)
+
+	router.POST("/signup", app.signup)
+	router.POST("/login", app.login)
+
+	//router.Use(Protecter())
+
 	router.GET("/tasks/:id", app.view)
 	router.DELETE("/tasks/:id", app.delete)
 	router.PATCH("/tasks/:id", app.patch)
