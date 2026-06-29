@@ -7,7 +7,12 @@ import (
 )
 
 type Config struct {
-	Port string
+	Addr     string
+	Port     string
+	Host     string
+	Name     string
+	Password string
+	User     string
 }
 
 type App struct {
@@ -21,7 +26,12 @@ type Option func(*App)
 func NewApp(opts ...Option) *App {
 	s := &App{
 		Cfg: &Config{
-			Port: os.Getenv("TODO_PORT"),
+			Addr:     os.Getenv("WEB_ADDR"),
+			Port:     os.Getenv("DB_PORT"),
+			Host:     os.Getenv("DB_HOST"),
+			Name:     os.Getenv("DB_NAME"),
+			Password: os.Getenv("DB_PASSWORD"),
+			User:     os.Getenv("DB_USER"),
 		},
 	}
 

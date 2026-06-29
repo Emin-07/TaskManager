@@ -9,7 +9,7 @@ import (
 
 func (app *App) NewServer() *http.Server {
 	return &http.Server{
-		Addr:         app.Cfg.Port,
+		Addr:         app.Cfg.Addr,
 		Handler:      app.routes(),
 		ReadTimeout:  5 * time.Second,
 		WriteTimeout: 10 * time.Second,

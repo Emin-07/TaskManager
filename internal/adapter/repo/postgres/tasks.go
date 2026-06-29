@@ -1,6 +1,7 @@
 package postgres
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"strings"
@@ -23,18 +24,18 @@ type TaskModel struct {
 	DB *sqlx.DB
 }
 
-func (m *TaskModel) Latest() ([]*Task, error) {
+func (m *TaskModel) Latest(ctx context.Context) ([]*Task, error) {
 	tasks := []*Task{}
-	err := m.DB.Select(&tasks, "SELECT * FROM tasks WHERE expires > UTC_TIMESTAMP() ORDER BY id")
+	err := m.DB.SelectContext(ctx, &tasks, "SELECT * FROM tasks WHERE expires > UTC_TIMESTAMP() ORDER BY id")
 	if err != nil {
 		return nil, err
 	}
 	return tasks, nil
 }
 
-func (m *TaskModel) Get(id int) (*Task, error) {
+func (m *TaskModel) Get(ctx context.Context, id int) (*Task, error) {
 	task := Task{}
-	err := m.DB.Get(&task, "SELECT * FROM tasks WHERE id = ?", id)
+	err := m.DB.GetContext(ctx, &task, "SELECT * FROM tasks WHERE id = ?", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, ErrNoRecord
@@ -44,9 +45,9 @@ func (m *TaskModel) Get(id int) (*Task, error) {
 	return &task, nil
 }
 
-func (m *TaskModel) Insert(title, text, priority string, expireDays, userId int) (int64, error) {
+func (m *TaskModel) Insert(ctx context.Context, title, text, priority string, expireDays, userId int) (int64, error) {
 	query := `INSERT INTO tasks (title, text, priority, expires, user_id) VALUES (?, ?, ?, DATE_ADD(NOW(), INTERVAL ? DAY), ?)`
-	res, err := m.DB.Exec(query, title, text, priority, expireDays, userId)
+	res, err := m.DB.ExecContext(ctx, query, title, text, priority, expireDays, userId)
 
 	if err != nil {
 		return 0, err
@@ -67,7 +68,7 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) error {
+func (m *TaskModel) Patch(ctx context.Context, title, text, priority string, id, expireDays int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
@@ -98,7 +99,7 @@ func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) erro
 	args = append(args, id)
 	query.WriteString("WHERE id = ?")
 
-	_, err := m.DB.Exec(query.String(), args...)
+	_, err := m.DB.ExecContext(ctx, query.String(), args...)
 
 	if err != nil {
 		return err
@@ -107,16 +108,8 @@ func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) erro
 	return nil
 }
 
-func (m *TaskModel) Delete(id int) error {
-	_, err := m.DB.Exec("DELETE FROM tasks WHERE id = ?", id)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-func (m *TaskModel) RefreshTasks(limit, days int) error {
-	// _, err := m.DB.Exec("UPDATE tasks SET expires = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id < ? AND expires < UTC_TIMESTAMP()", days, limit)
-	_, err := m.DB.Exec("UPDATE tasks SET expires = DATE_ADD(NOW(), INTERVAL ? DAY) WHERE id < ? ", days, limit)
+func (m *TaskModel) Delete(ctx context.Context, id int) error {
+	_, err := m.DB.ExecContext(ctx, "DELETE FROM tasks WHERE id = ?", id)
 	if err != nil {
 		return err
 	}
