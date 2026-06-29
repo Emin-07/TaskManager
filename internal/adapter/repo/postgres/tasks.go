@@ -1,4 +1,4 @@
-package models
+package postgres
 
 import (
 	"database/sql"
@@ -67,7 +67,7 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func (m *TaskModel) Patch(title, text, priority string, id, userId, expireDays int) error {
+func (m *TaskModel) Patch(title, text, priority string, id, expireDays int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
@@ -86,11 +86,6 @@ func (m *TaskModel) Patch(title, text, priority string, id, userId, expireDays i
 		queryOrderTracker(&query, &isNotFirst)
 		query.WriteString(`priority = ? `)
 		args = append(args, priority)
-	}
-	if userId != 0 {
-		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(`user_id = ? `)
-		args = append(args, userId)
 	}
 	if expireDays != 0 {
 		queryOrderTracker(&query, &isNotFirst)

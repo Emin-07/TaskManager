@@ -1,4 +1,4 @@
-package models
+package postgres
 
 import (
 	"time"
@@ -9,6 +9,7 @@ import (
 type User struct {
 	Id           int       `db:"id"`
 	Username     string    `db:"title"`
+	Role         string    `db:"role"`
 	Email        string    `db:"email"`
 	PasswordHash string    `db:"password_hash"`
 	CreatedAt    time.Time `db:"created_at"`
