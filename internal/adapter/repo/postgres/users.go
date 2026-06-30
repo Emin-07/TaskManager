@@ -2,45 +2,46 @@ package postgres
 
 import (
 	"context"
-	"time"
+	"database/sql"
+	"errors"
 
 	"github.com/jmoiron/sqlx"
-)
 
-type User struct {
-	Id           int       `db:"id"`
-	Username     string    `db:"title"`
-	Role         string    `db:"role"`
-	Email        string    `db:"email"`
-	PasswordHash string    `db:"password_hash"`
-	CreatedAt    time.Time `db:"created_at"`
-}
+	"github.com/Emin-07/TaskManager/internal/adapter/repo"
+	"github.com/Emin-07/TaskManager/internal/core/domain"
+)
 
 type UserModel struct {
 	DB *sqlx.DB
 }
 
-func (m *UserModel) GetByEmail(ctx context.Context, email string) (*User, error) {
-	user := &User{}
+func (m *UserModel) GetByEmail(ctx context.Context, email string) (*repo.UserDb, error) {
+	user := &repo.UserDb{}
 	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE email = ?", email)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNoRecord
+		}
 		return nil, err
 	}
 	return user, nil
 }
 
-func (m *UserModel) GetById(ctx context.Context, id int) (*User, error) {
-	user := &User{}
+func (m *UserModel) GetById(ctx context.Context, id int) (*repo.UserDb, error) {
+	user := &repo.UserDb{}
 	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE id = ?", id)
 	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, domain.ErrNoRecord
+		}
 		return nil, err
 	}
 	return user, nil
 }
 
-func (m *UserModel) GetUserTasks(ctx context.Context, id int) ([]*Task, error) {
+func (m *UserModel) GetUserTasks(ctx context.Context, id int) ([]*repo.TaskDb, error) {
 	query := "SELECT * FROM tasks WHERE user_id = ? ORDER BY id DESC"
-	tasks := []*Task{}
+	tasks := []*repo.TaskDb{}
 	err := m.DB.SelectContext(ctx, &tasks, query, id)
 	if err != nil {
 		return nil, err
@@ -48,9 +49,9 @@ func (m *UserModel) GetUserTasks(ctx context.Context, id int) ([]*Task, error) {
 	return tasks, nil
 }
 
-func (m *UserModel) Insert(ctx context.Context, username, email, passwordHash string) (int, error) {
-	query := "INSERT INTO users (title, email, password_hash) VALUES (?, ?, ?)"
-	res, err := m.DB.ExecContext(ctx, query, username, email, passwordHash)
+func (m *UserModel) Insert(ctx context.Context, username, role, email, passwordHash string) (int, error) {
+	query := "INSERT INTO users (username, role,  email, password_hash) VALUES (?, ?, ?, ?)"
+	res, err := m.DB.ExecContext(ctx, query, username, role, email, passwordHash)
 	if err != nil {
 		return 0, err
 	}

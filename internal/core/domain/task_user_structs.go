@@ -3,18 +3,34 @@ package domain
 import "time"
 
 type Task struct {
-	ID        string    `json:"id"`
-	Title     string    `json:"title"`
-	Comment   string    `json:"comment"`
-	Priority  string    `json:"priority"`
-	CreatedAt time.Time `json:"created_at"`
-	CreatedBy int       `json:"created_by"`
+	ID        int
+	Title     string
+	Text      string
+	Priority  int
+	CreatedAt time.Time
+	Expires   time.Time
+	UserId    int
 }
 
-//type User struct {
-//	ID      string `json:"id"`
-//	Date    string `json:"date"`
-//	Title   string `json:"title"`
-//	Comment string `json:"comment"`
-//	Repeat  string `json:"repeat"`
-//}
+type CreateTask struct {
+	Title      string
+	Text       string
+	Priority   string
+	ExpireDays string
+}
+
+type User struct {
+	ID           int
+	Username     string
+	Role         string
+	Email        string
+	PasswordHash []byte
+	CreatedAt    time.Time
+}
+
+type SignupUser struct {
+	Username string
+	Role     string
+	Email    string
+	Password string
+}
