@@ -4,20 +4,16 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-
-	"github.com/jmoiron/sqlx"
+	"fmt"
+	"strings"
 
 	"github.com/Emin-07/TaskManager/internal/adapter/repo"
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-type UserModel struct {
-	DB *sqlx.DB
-}
-
-func (m *UserModel) GetByEmail(ctx context.Context, email string) (*repo.UserDb, error) {
+func (m *UserRepo) GetByEmail(ctx context.Context, email string) (*repo.UserDb, error) {
 	user := &repo.UserDb{}
-	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE email = ?", email)
+	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE email = $1", email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord
@@ -27,9 +23,9 @@ func (m *UserModel) GetByEmail(ctx context.Context, email string) (*repo.UserDb,
 	return user, nil
 }
 
-func (m *UserModel) GetById(ctx context.Context, id int) (*repo.UserDb, error) {
+func (m *UserRepo) GetById(ctx context.Context, id int) (*repo.UserDb, error) {
 	user := &repo.UserDb{}
-	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE id = ?", id)
+	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord
@@ -39,8 +35,18 @@ func (m *UserModel) GetById(ctx context.Context, id int) (*repo.UserDb, error) {
 	return user, nil
 }
 
-func (m *UserModel) GetUserTasks(ctx context.Context, id int) ([]*repo.TaskDb, error) {
-	query := "SELECT * FROM tasks WHERE user_id = ? ORDER BY id DESC"
+func (m *UserRepo) List(ctx context.Context) ([]*repo.UserDb, error) {
+	query := "SELECT * FROM users ORDER BY id DESC"
+	users := []*repo.UserDb{}
+	err := m.DB.SelectContext(ctx, &users, query)
+	if err != nil {
+		return nil, err
+	}
+	return users, nil
+}
+
+func (m *UserRepo) GetUserTasks(ctx context.Context, id int) ([]*repo.TaskDb, error) {
+	query := "SELECT * FROM tasks WHERE user_id = $1 ORDER BY id DESC"
 	tasks := []*repo.TaskDb{}
 	err := m.DB.SelectContext(ctx, &tasks, query, id)
 	if err != nil {
@@ -49,8 +55,8 @@ func (m *UserModel) GetUserTasks(ctx context.Context, id int) ([]*repo.TaskDb, e
 	return tasks, nil
 }
 
-func (m *UserModel) Insert(ctx context.Context, username, role, email, passwordHash string) (int, error) {
-	query := "INSERT INTO users (username, role,  email, password_hash) VALUES (?, ?, ?, ?)"
+func (m *UserRepo) Insert(ctx context.Context, username, role, email, passwordHash string) (int, error) {
+	query := "INSERT INTO users (username, role,  email, password_hash) VALUES ($1, $2, $3, $4)"
 	res, err := m.DB.ExecContext(ctx, query, username, role, email, passwordHash)
 	if err != nil {
 		return 0, err
@@ -62,10 +68,53 @@ func (m *UserModel) Insert(ctx context.Context, username, role, email, passwordH
 	return int(newId), nil
 }
 
-//TODO:need to add patch
+func (m *UserRepo) Patch(ctx context.Context, username, role, email, passwordHash string, id int) error {
+	var query strings.Builder
+	var args []any
+	var isNotFirst bool
+	cnt := 1
+	query.WriteString("UPDATE users SET ")
+	if username != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(fmt.Sprintf(`username = $%d `, cnt))
+		cnt++
+		args = append(args, username)
+	}
+	if role != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(fmt.Sprintf(`role = $%d `, cnt))
+		cnt++
+		args = append(args, role)
+	}
+	if email != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(fmt.Sprintf(`email = $%d `, cnt))
+		cnt++
+		args = append(args, email)
+	}
+	if passwordHash != "" {
+		queryOrderTracker(&query, &isNotFirst)
+		query.WriteString(fmt.Sprintf(`password_hash = $%d `, cnt))
+		cnt++
+		args = append(args, passwordHash)
+	}
+	if len(args) == 0 {
+		return domain.ErrNoData
+	}
+	args = append(args, id)
+	query.WriteString(fmt.Sprintf("WHERE id = $%d"))
 
-func (m *UserModel) Delete(ctx context.Context, id int) error {
-	_, err := m.DB.ExecContext(ctx, "DELETE FROM users WHERE id = ?", id)
+	_, err := m.DB.ExecContext(ctx, query.String(), args...)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *UserRepo) Delete(ctx context.Context, id int) error {
+	_, err := m.DB.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
 	if err != nil {
 		return err
 	}

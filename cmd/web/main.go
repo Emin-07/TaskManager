@@ -9,9 +9,9 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 
 	"github.com/Emin-07/TaskManager/internal/adapter/handler"
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/postgres"
@@ -27,7 +27,9 @@ func init() {
 }
 
 func main() {
-	dsn := fmt.Sprintf("postgres://username:password@host:port/dbname?sslmode=disable")
+	cfg := app.NewConfig()
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name)
+
 	db, err := openDB(dsn)
 	if err != nil {
 		log.Fatal(err)
@@ -45,6 +47,7 @@ func main() {
 	srv := application.NewServer()
 
 	go func() {
+		log.Printf("Staring Server at http://localhost%s \n...", application.Addr)
 		if err = srv.ListenAndServe(); err != nil {
 			log.Fatalf("listen: %s\n", err)
 		}

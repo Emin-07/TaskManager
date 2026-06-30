@@ -7,7 +7,6 @@ import (
 )
 
 type Config struct {
-	Addr     string
 	Port     string
 	Host     string
 	Name     string
@@ -15,8 +14,18 @@ type Config struct {
 	User     string
 }
 
+func NewConfig() *Config {
+	return &Config{
+		Port:     os.Getenv("DB_PORT"),
+		Host:     os.Getenv("DB_HOST"),
+		Name:     os.Getenv("DB_NAME"),
+		Password: os.Getenv("DB_PASSWORD"),
+		User:     os.Getenv("DB_USER"),
+	}
+}
+
 type App struct {
-	Cfg         *Config
+	Addr        string
 	taskHandler *handler.TaskHandler
 	userHandler *handler.UserHandler
 }
@@ -25,14 +34,7 @@ type Option func(*App)
 
 func NewApp(opts ...Option) *App {
 	s := &App{
-		Cfg: &Config{
-			Addr:     os.Getenv("WEB_ADDR"),
-			Port:     os.Getenv("DB_PORT"),
-			Host:     os.Getenv("DB_HOST"),
-			Name:     os.Getenv("DB_NAME"),
-			Password: os.Getenv("DB_PASSWORD"),
-			User:     os.Getenv("DB_USER"),
-		},
+		Addr: os.Getenv("WEB_ADDR"),
 	}
 
 	for _, opt := range opts {

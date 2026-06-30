@@ -27,13 +27,24 @@ func (t *TaskServ) Get(ctx context.Context, id string) (*domain.Task, error) {
 	}, nil
 }
 func (t *TaskServ) List(ctx context.Context, limit, offset string) ([]*domain.Task, error) {
-	limitInt, err := strconv.Atoi(limit)
-	if err != nil {
-		return nil, err
+	var limitInt, offsetInt int
+	var err error
+	if limit == "" {
+		limitInt = 5
+	} else {
+		limitInt, err = strconv.Atoi(limit)
+		if err != nil {
+			return nil, err
+		}
 	}
-	offsetInt, err := strconv.Atoi(offset)
-	if err != nil {
-		return nil, err
+
+	if offset == "" {
+		offsetInt = 5
+	} else {
+		offsetInt, err = strconv.Atoi(offset)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	tasksToConvert, err := t.repo.List(ctx, limitInt, offsetInt)

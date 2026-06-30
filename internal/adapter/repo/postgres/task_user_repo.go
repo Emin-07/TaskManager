@@ -1,6 +1,8 @@
 package postgres
 
-import "github.com/jmoiron/sqlx"
+import (
+	"github.com/jmoiron/sqlx"
+)
 
 type TaskRepo struct {
 	DB *sqlx.DB
