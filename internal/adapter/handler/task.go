@@ -49,12 +49,17 @@ func (t *TaskHandler) List(c *gin.Context) {
 func (t *TaskHandler) Post(c *gin.Context) {
 	// TODO: get current user id
 	userId := 1
+	var reqTask TaskRequest
+	if err := c.ShouldBindBodyWithJSON(&reqTask); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
 	id, err := t.service.Post(c.Request.Context(), &domain.CreateTask{
-		Title:      c.PostForm("title"),
-		Text:       c.PostForm("text"),
-		Priority:   c.PostForm("priority"),
-		ExpireDays: c.PostForm("expire_days"),
+		Title:      reqTask.Title,
+		Text:       reqTask.Text,
+		Priority:   reqTask.Priority,
+		ExpireDays: reqTask.ExpireDays,
 	}, userId)
 
 	if err != nil {
@@ -77,12 +82,17 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 
 func (t *TaskHandler) Patch(c *gin.Context) {
 	id := c.Param("id")
+	var reqTask TaskRequest
+	if err := c.ShouldBindBodyWithJSON(&reqTask); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 
 	err := t.service.Patch(c.Request.Context(), &domain.CreateTask{
-		Title:      c.PostForm("title"),
-		Text:       c.PostForm("text"),
-		Priority:   c.PostForm("priority"),
-		ExpireDays: c.PostForm("expire_days"),
+		Title:      reqTask.Title,
+		Text:       reqTask.Text,
+		Priority:   reqTask.Priority,
+		ExpireDays: reqTask.ExpireDays,
 	}, id)
 
 	if err != nil {

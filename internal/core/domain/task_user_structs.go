@@ -15,8 +15,8 @@ type Task struct {
 type CreateTask struct {
 	Title      string
 	Text       string
-	Priority   string
-	ExpireDays string
+	Priority   int
+	ExpireDays int
 }
 
 type User struct {

@@ -58,15 +58,7 @@ func (t *TaskServ) List(ctx context.Context, limit, offset string) ([]*domain.Ta
 
 }
 func (t *TaskServ) Post(ctx context.Context, task *domain.CreateTask, userId int) (int64, error) {
-	priority, err := strconv.Atoi(task.Priority)
-	if err != nil {
-		return 0, err
-	}
-	expireDays, err := strconv.Atoi(task.ExpireDays)
-	if err != nil {
-		return 0, err
-	}
-	return t.repo.Insert(ctx, task.Title, task.Text, priority, expireDays, userId)
+	return t.repo.Insert(ctx, task.Title, task.Text, task.Priority, task.ExpireDays, userId)
 }
 
 func (t *TaskServ) Delete(ctx context.Context, id string) error {
@@ -82,13 +74,5 @@ func (t *TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id string
 	if err != nil {
 		return err
 	}
-	priority, err := strconv.Atoi(task.Priority)
-	if err != nil {
-		return err
-	}
-	expireDays, err := strconv.Atoi(task.ExpireDays)
-	if err != nil {
-		return err
-	}
-	return t.repo.Patch(ctx, task.Title, task.Text, priority, expireDays, idInt)
+	return t.repo.Patch(ctx, task.Title, task.Text, task.Priority, task.ExpireDays, idInt)
 }
