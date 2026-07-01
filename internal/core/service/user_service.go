@@ -6,6 +6,6 @@ type UserServ struct {
 	repo port.UserRepo
 }
 
-func NewUserService(repo port.UserRepo) *UserServ {
-	return &UserServ{repo: repo}
+func NewUserService(repo port.UserRepo) UserServ {
+	return UserServ{repo: repo}
 }

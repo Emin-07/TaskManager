@@ -7,7 +7,7 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (u *UserServ) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+func (u UserServ) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	user, err := u.repo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, err
@@ -15,7 +15,7 @@ func (u *UserServ) GetByEmail(ctx context.Context, email string) (*domain.User, 
 	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, PasswordHash: user.PasswordHash, CreatedAt: user.CreatedAt}, nil
 }
 
-func (u *UserServ) GetById(ctx context.Context, id string) (*domain.User, error) {
+func (u UserServ) GetById(ctx context.Context, id string) (*domain.User, error) {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func (u *UserServ) GetById(ctx context.Context, id string) (*domain.User, error)
 	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, PasswordHash: user.PasswordHash, CreatedAt: user.CreatedAt}, nil
 }
 
-func (u *UserServ) List(ctx context.Context) ([]*domain.User, error) {
+func (u UserServ) List(ctx context.Context) ([]*domain.User, error) {
 	usersToConvert, err := u.repo.List(ctx)
 	if err != nil {
 		return nil, err
@@ -48,7 +48,7 @@ func (u *UserServ) List(ctx context.Context) ([]*domain.User, error) {
 
 }
 
-//func (u *UserServ) GetUserTasks(ctx context.Context, id string) ([]*domain.Task, error) {
+//func (u UserServ) GetUserTasks(ctx context.Context, id string) ([]*domain.Task, error) {
 //	idInt, err := strconv.Atoi(id)
 //	if err != nil {
 //		return nil, err
@@ -74,7 +74,7 @@ func (u *UserServ) List(ctx context.Context) ([]*domain.User, error) {
 //	return tasks, nil
 //}
 
-func (u *UserServ) Patch(ctx context.Context, user *domain.SignupUser, id string) error {
+func (u UserServ) Patch(ctx context.Context, user *domain.SignupUser, id string) error {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return err
@@ -85,14 +85,14 @@ func (u *UserServ) Patch(ctx context.Context, user *domain.SignupUser, id string
 	return u.repo.Patch(ctx, user.Username, user.Role, user.Email, hashed_password, idInt)
 }
 
-func (u *UserServ) Insert(ctx context.Context, user *domain.SignupUser) (int, error) {
+func (u UserServ) Insert(ctx context.Context, user *domain.SignupUser) error {
 	//TODO: Password hashing
 	hashed_password := user.Password
 
 	return u.repo.Insert(ctx, user.Username, user.Role, user.Email, hashed_password)
 }
 
-func (u *UserServ) Delete(ctx context.Context, id string) error {
+func (u UserServ) Delete(ctx context.Context, id string) error {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return err

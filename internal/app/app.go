@@ -26,8 +26,8 @@ func NewConfig() *Config {
 
 type App struct {
 	Addr        string
-	taskHandler *handler.TaskHandler
-	userHandler *handler.UserHandler
+	taskHandler handler.TaskHandler
+	userHandler handler.UserHandler
 }
 
 type Option func(*App)
@@ -43,13 +43,13 @@ func NewApp(opts ...Option) *App {
 	return s
 }
 
-func WithTaskHandler(taskHandler *handler.TaskHandler) Option {
+func WithTaskHandler(taskHandler handler.TaskHandler) Option {
 	return func(a *App) {
 		a.taskHandler = taskHandler
 	}
 }
 
-func WithUserHandler(userHandler *handler.UserHandler) Option {
+func WithUserHandler(userHandler handler.UserHandler) Option {
 	return func(a *App) {
 		a.userHandler = userHandler
 	}

@@ -11,8 +11,8 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (m *TaskRepo) List(ctx context.Context, limit, offset int) ([]*repo.TaskDb, error) {
-	tasks := []*repo.TaskDb{}
+func (m TaskRepo) List(ctx context.Context, limit, offset int) ([]*repo.TaskDb, error) {
+	var tasks []*repo.TaskDb
 	query := `SELECT * FROM tasks WHERE expires > CURRENT_TIMESTAMP  ORDER BY id LIMIT $1 OFFSET $2`
 	err := m.DB.SelectContext(ctx, &tasks, query, limit, offset)
 	if err != nil {
@@ -21,7 +21,7 @@ func (m *TaskRepo) List(ctx context.Context, limit, offset int) ([]*repo.TaskDb,
 	return tasks, nil
 }
 
-func (m *TaskRepo) Get(ctx context.Context, id int) (*repo.TaskDb, error) {
+func (m TaskRepo) Get(ctx context.Context, id int) (*repo.TaskDb, error) {
 	task := repo.TaskDb{}
 	err := m.DB.GetContext(ctx, &task, "SELECT * FROM tasks WHERE id = $1", id)
 	if err != nil {
@@ -33,19 +33,19 @@ func (m *TaskRepo) Get(ctx context.Context, id int) (*repo.TaskDb, error) {
 	return &task, nil
 }
 
-func (m *TaskRepo) Insert(ctx context.Context, title, text string, priority, expireDays, userId int) (int64, error) {
+func (m TaskRepo) Insert(ctx context.Context, title, text string, priority, expireDays, userId int) error {
 	query := `INSERT INTO tasks (title, text, priority, expires, user_id) VALUES ($1, $2, $3, CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $4), $5)`
-	res, err := m.DB.ExecContext(ctx, query, title, text, expireDays, priority, userId)
+	res, err := m.DB.ExecContext(ctx, query, title, text, priority, expireDays, userId)
 
 	if err != nil {
-		return 0, err
+		return err
 	}
 
-	id, err := res.LastInsertId()
+	_, err = res.LastInsertId()
 	if err != nil {
-		return 0, err
+		return err
 	}
-	return id, nil
+	return nil
 }
 
 func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
@@ -56,7 +56,7 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func (m *TaskRepo) Patch(ctx context.Context, title, text string, priority, expireDays, id int) error {
+func (m TaskRepo) Patch(ctx context.Context, title, text string, priority, expireDays, id int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
@@ -92,16 +92,21 @@ func (m *TaskRepo) Patch(ctx context.Context, title, text string, priority, expi
 	args = append(args, id)
 	query.WriteString(fmt.Sprintf("WHERE id = $%d", cnt))
 
-	_, err := m.DB.ExecContext(ctx, query.String(), args...)
+	result, err := m.DB.ExecContext(ctx, query.String(), args...)
 
 	if err != nil {
 		return err
 	}
 
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return domain.ErrNoRecord
+	}
+
 	return nil
 }
 
-func (m *TaskRepo) Delete(ctx context.Context, id int) error {
+func (m TaskRepo) Delete(ctx context.Context, id int) error {
 	_, err := m.DB.ExecContext(ctx, "DELETE FROM tasks WHERE id = $1", id)
 	if err != nil {
 		return err

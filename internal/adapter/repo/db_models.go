@@ -7,7 +7,7 @@ type TaskDb struct {
 	Title     string    `db:"title"`
 	Text      string    `db:"text"`
 	Priority  int       `db:"priority"`
-	CreatedAt time.Time `db:"created_at"`
+	CreatedAt time.Time `db:"created"`
 	Expires   time.Time `db:"expires"`
 	UserId    int       `db:"user_id"`
 }

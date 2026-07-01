@@ -7,7 +7,7 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (t *TaskServ) Get(ctx context.Context, id string) (*domain.Task, error) {
+func (t TaskServ) Get(ctx context.Context, id string) (*domain.Task, error) {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return nil, err
@@ -26,7 +26,7 @@ func (t *TaskServ) Get(ctx context.Context, id string) (*domain.Task, error) {
 		UserId:    task.UserId,
 	}, nil
 }
-func (t *TaskServ) List(ctx context.Context, limit, offset string) ([]*domain.Task, error) {
+func (t TaskServ) List(ctx context.Context, limit, offset string) ([]*domain.Task, error) {
 	var limitInt, offsetInt int
 	var err error
 	if limit == "" {
@@ -68,11 +68,11 @@ func (t *TaskServ) List(ctx context.Context, limit, offset string) ([]*domain.Ta
 	return tasks, nil
 
 }
-func (t *TaskServ) Post(ctx context.Context, task *domain.CreateTask, userId int) (int64, error) {
+func (t TaskServ) Post(ctx context.Context, task *domain.CreateTask, userId int) error {
 	return t.repo.Insert(ctx, task.Title, task.Text, task.Priority, task.ExpireDays, userId)
 }
 
-func (t *TaskServ) Delete(ctx context.Context, id string) error {
+func (t TaskServ) Delete(ctx context.Context, id string) error {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return err
@@ -80,7 +80,7 @@ func (t *TaskServ) Delete(ctx context.Context, id string) error {
 	return t.repo.Delete(ctx, idInt)
 }
 
-func (t *TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id string) error {
+func (t TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id string) error {
 	idInt, err := strconv.Atoi(id)
 	if err != nil {
 		return err

@@ -6,6 +6,6 @@ type TaskServ struct {
 	repo port.TaskRepo
 }
 
-func NewTaskService(repo port.TaskRepo) *TaskServ {
-	return &TaskServ{repo: repo}
+func NewTaskService(repo port.TaskRepo) TaskServ {
+	return TaskServ{repo: repo}
 }

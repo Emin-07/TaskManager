@@ -65,7 +65,7 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	id, err := u.service.Insert(c.Request.Context(), &domain.SignupUser{
+	err := u.service.Insert(c.Request.Context(), &domain.SignupUser{
 		Username: userReq.Username,
 		Role:     userReq.Role,
 		Email:    userReq.Email,
@@ -77,7 +77,7 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/users/%d", id))
+	c.Redirect(http.StatusSeeOther, "/users")
 }
 
 func (u *UserHandler) Patch(c *gin.Context) {

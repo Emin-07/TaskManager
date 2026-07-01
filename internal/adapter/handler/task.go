@@ -55,7 +55,7 @@ func (t *TaskHandler) Post(c *gin.Context) {
 		return
 	}
 
-	id, err := t.service.Post(c.Request.Context(), &domain.CreateTask{
+	err := t.service.Post(c.Request.Context(), &domain.CreateTask{
 		Title:      taskReq.Title,
 		Text:       taskReq.Text,
 		Priority:   taskReq.Priority,
@@ -67,7 +67,7 @@ func (t *TaskHandler) Post(c *gin.Context) {
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/tasks/%d", id))
+	c.Redirect(http.StatusSeeOther, "/tasks")
 
 }
 func (t *TaskHandler) Delete(c *gin.Context) {
