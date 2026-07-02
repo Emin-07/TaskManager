@@ -6,7 +6,16 @@ import (
 	"strconv"
 
 	"github.com/Emin-07/TaskManager/internal/core/domain"
+	"github.com/Emin-07/TaskManager/internal/core/port"
 )
+
+type TaskServ struct {
+	repo port.TaskRepo
+}
+
+func NewTaskService(repo port.TaskRepo) TaskServ {
+	return TaskServ{repo: repo}
+}
 
 func (t TaskServ) Get(ctx context.Context, id string) (*domain.Task, error) {
 	idInt, err := strconv.Atoi(id)

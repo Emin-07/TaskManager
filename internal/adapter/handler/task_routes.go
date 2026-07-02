@@ -3,11 +3,16 @@ package handler
 import "github.com/gin-gonic/gin"
 
 func (t *TaskHandler) RegisterRoutes(r *gin.Engine) {
-	r.GET("/tasks", t.List)
-	r.POST("/tasks", t.Post)
+	r.Use(SecureHeaders())
+	authorized := r.Group("/")
+	authorized.Use(AuthRequired(t.tokenService))
+	{
+		authorized.GET("/tasks", t.List)
+		authorized.POST("/tasks", t.Post)
 
-	r.GET("/tasks/:id", t.Get)
-	r.DELETE("/tasks/:id", t.Delete)
-	r.PATCH("/tasks/:id", t.Patch)
+		authorized.GET("/tasks/:id", t.Get)
+		authorized.DELETE("/tasks/:id", t.Delete)
+		authorized.PATCH("/tasks/:id", t.Patch)
+	}
 
 }

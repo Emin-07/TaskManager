@@ -3,6 +3,7 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	_ "github.com/swaggo/files"       // swagger embed files
@@ -12,7 +13,6 @@ import (
 )
 
 // TODO: Add getting tasks by users
-// TODO: Handle get email
 // TODO: Add limit and offset for listing users
 
 func (u *UserHandler) Authenticate(c *gin.Context) {
@@ -21,12 +21,13 @@ func (u *UserHandler) Authenticate(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"user": UserResponse{
-		Id:        userToConvert.ID,
-		Username:  userToConvert.Username,
-		Role:      userToConvert.Role,
-		Email:     userToConvert.Email,
-		CreatedAt: userToConvert.CreatedAt}})
+	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID))
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
 func (u *UserHandler) GetById(c *gin.Context) {

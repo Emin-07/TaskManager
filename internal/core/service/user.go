@@ -9,9 +9,18 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Emin-07/TaskManager/internal/core/domain"
+	"github.com/Emin-07/TaskManager/internal/core/port"
 )
 
 const usernameNAmount = 8
+
+type UserServ struct {
+	repo port.UserRepo
+}
+
+func NewUserService(repo port.UserRepo) UserServ {
+	return UserServ{repo: repo}
+}
 
 func (u UserServ) Authenticate(ctx context.Context, email string, password string) (*domain.User, error) {
 	err := validateCreds(email, password)

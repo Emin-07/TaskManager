@@ -21,6 +21,11 @@ import (
 	docs "github.com/Emin-07/TaskManager/cmd/web/docs"
 )
 
+const (
+	privKeyPath = "certs/private.pem"
+	pubKeyPath  = "certs/public.pem"
+)
+
 func init() {
 	err := godotenv.Load()
 	if err != nil {
@@ -48,9 +53,11 @@ func main() {
 
 	userService := service.NewUserService(userRepo)
 	taskService := service.NewTaskService(taskRepo)
+	tokenService := service.NewTokenService(privKeyPath, pubKeyPath)
 
-	userHandler := handler.NewUserHandler(userService)
-	taskHandler := handler.NewTaskHandler(taskService)
+	userHandler := handler.NewUserHandler(userService, tokenService)
+	taskHandler := handler.NewTaskHandler(taskService, tokenService)
+
 	application := app.NewApp(app.WithTaskHandler(taskHandler), app.WithUserHandler(userHandler))
 	srv := application.NewServer()
 
