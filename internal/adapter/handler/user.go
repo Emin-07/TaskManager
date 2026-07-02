@@ -13,15 +13,18 @@ import (
 )
 
 // TODO: Add getting tasks by users
-// TODO: Add limit and offset for listing users
 
 func (u *UserHandler) Authenticate(c *gin.Context) {
 	userToConvert, err := u.service.Authenticate(c.Request.Context(), c.PostForm("email"), c.PostForm("password"))
+	role := c.PostForm("role")
+	if role == "" {
+		role = "user"
+	}
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID))
+	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID), role)
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return

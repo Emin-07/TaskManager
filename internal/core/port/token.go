@@ -5,6 +5,6 @@ import (
 )
 
 type TokenService interface {
-	CreateToken(id string) (string, error)
-	ParseFromRequest(r *http.Request) (string, error)
+	CreateToken(id, role string) (string, error)
+	ParseFromRequest(r *http.Request) (map[string]string, error)
 }

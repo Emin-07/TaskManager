@@ -33,6 +33,8 @@ func init() {
 	}
 }
 
+//TODO: add so admin can access all tasks, just one more condition where role = 'admin'
+
 func main() {
 	docs.SwaggerInfo.Title = "TaskManager"
 	docs.SwaggerInfo.Description = "App built in go with gin and postgres, basic todo app, with users and tasks"

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,7 +36,12 @@ func NewTokenService(privKeyPath, pubKeyPath string) TokenServ {
 //	return jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 //}
 
-func (ts TokenServ) CreateToken(id string) (string, error) {
+type CustomClaims struct {
+	jwt.RegisteredClaims
+	Role string
+}
+
+func (ts TokenServ) CreateToken(id, role string) (string, error) {
 	signBytes, err := os.ReadFile(ts.PrivKeyPath)
 	if err != nil {
 		log.Fatal(err)
@@ -45,11 +51,14 @@ func (ts TokenServ) CreateToken(id string) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	t := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.RegisteredClaims{Subject: id, ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute * 15))})
+	t := jwt.NewWithClaims(jwt.SigningMethodRS256,
+		&CustomClaims{
+			jwt.RegisteredClaims{Subject: id, ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute * 15))}, strings.ToLower(role),
+		})
 	return t.SignedString(signKey)
 }
 
-func (ts TokenServ) ParseFromRequest(r *http.Request) (string, error) {
+func (ts TokenServ) ParseFromRequest(r *http.Request) (map[string]string, error) {
 	token, err := request.ParseFromRequest(r, request.OAuth2Extractor, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -62,9 +71,10 @@ func (ts TokenServ) ParseFromRequest(r *http.Request) (string, error) {
 		return jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
 	}, request.WithClaims(&jwt.RegisteredClaims{}))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
+	id := token.Claims.(*CustomClaims).Subject
+	role := token.Claims.(*CustomClaims).Role
 
-	return token.Claims.GetSubject()
-
+	return map[string]string{"id": id, "role": role}, nil
 }

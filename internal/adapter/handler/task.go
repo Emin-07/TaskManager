@@ -18,7 +18,12 @@ import (
 // @Success 200 {string} {"task": {Id, Title, Text, Priority, Expires}}
 // @Router /tasks/:id [get]
 func (t *TaskHandler) Get(c *gin.Context) {
-	taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"))
+	data, err := t.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
+	taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"), data["id"])
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -36,7 +41,12 @@ func (t *TaskHandler) Get(c *gin.Context) {
 func (t *TaskHandler) List(c *gin.Context) {
 	limit := c.Query("limit")
 	offset := c.Query("offset")
-	tasksToConvert, err := t.service.List(c.Request.Context(), limit, offset)
+	data, err := t.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
+	tasksToConvert, err := t.service.List(c.Request.Context(), limit, offset, data["id"])
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -55,20 +65,23 @@ func (t *TaskHandler) List(c *gin.Context) {
 
 }
 func (t *TaskHandler) Post(c *gin.Context) {
-	// TODO: get current user id
-	userId := 1
+	data, err := t.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
 	var taskReq TaskRequest
 	if err := c.ShouldBindBodyWithJSON(&taskReq); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	err := t.service.Post(c.Request.Context(), &domain.CreateTask{
+	err = t.service.Post(c.Request.Context(), &domain.CreateTask{
 		Title:      taskReq.Title,
 		Text:       taskReq.Text,
 		Priority:   taskReq.Priority,
 		ExpireDays: taskReq.ExpireDays,
-	}, userId)
+	}, data["id"])
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -79,7 +92,12 @@ func (t *TaskHandler) Post(c *gin.Context) {
 
 }
 func (t *TaskHandler) Delete(c *gin.Context) {
-	err := t.service.Delete(c.Request.Context(), c.Param("id"))
+	data, err := t.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
+	err = t.service.Delete(c.Request.Context(), c.Param("id"), data["id"])
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -89,6 +107,11 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 }
 
 func (t *TaskHandler) Patch(c *gin.Context) {
+	data, err := t.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
 	id := c.Param("id")
 	var taskReq TaskRequest
 	if err := c.ShouldBindBodyWithJSON(&taskReq); err != nil {
@@ -96,12 +119,12 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		return
 	}
 
-	err := t.service.Patch(c.Request.Context(), &domain.CreateTask{
+	err = t.service.Patch(c.Request.Context(), &domain.CreateTask{
 		Title:      taskReq.Title,
 		Text:       taskReq.Text,
 		Priority:   taskReq.Priority,
 		ExpireDays: taskReq.ExpireDays,
-	}, id)
+	}, id, data["id"])
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)

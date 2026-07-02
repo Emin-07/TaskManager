@@ -8,17 +8,17 @@ import (
 )
 
 type TaskService interface {
-	Get(ctx context.Context, id string) (*domain.Task, error)
-	List(ctx context.Context, limit, offset string) ([]*domain.Task, error)
-	Post(ctx context.Context, task *domain.CreateTask, userId int) error
-	Delete(ctx context.Context, id string) error
-	Patch(ctx context.Context, task *domain.CreateTask, id string) error
+	Get(ctx context.Context, id, userIdStr string) (*domain.Task, error)
+	List(ctx context.Context, limit, offset, userIdStr string) ([]*domain.Task, error)
+	Post(ctx context.Context, task *domain.CreateTask, userIdStr string) error
+	Delete(ctx context.Context, id, userIdStr string) error
+	Patch(ctx context.Context, task *domain.CreateTask, id, userIdStr string) error
 }
 
 type TaskRepo interface {
-	List(ctx context.Context, limit, offset int) ([]*repo.TaskDb, error)
-	Get(ctx context.Context, id int) (*repo.TaskDb, error)
+	List(ctx context.Context, limit, offset, userId int) ([]*repo.TaskDb, error)
+	Get(ctx context.Context, id, userId int) (*repo.TaskDb, error)
 	Insert(ctx context.Context, title, text string, priority, expireDays, userId int) error
-	Patch(ctx context.Context, title, text string, priority, expireDays, id int) error
-	Delete(ctx context.Context, id int) error
+	Patch(ctx context.Context, title, text string, priority, expireDays, id, userId int) error
+	Delete(ctx context.Context, id, userId int) error
 }
