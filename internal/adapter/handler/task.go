@@ -9,6 +9,14 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
+// @Summary get task
+// @Schemes
+// @Description get task from db
+// @Tags tasks
+// @Accept json
+// @Produce json
+// @Success 200 {string} {"task": {Id, Title, Text, Priority, Expires}}
+// @Router /tasks/:id [get]
 func (t *TaskHandler) Get(c *gin.Context) {
 	taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"))
 	if err != nil {

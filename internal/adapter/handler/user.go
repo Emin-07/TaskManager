@@ -5,6 +5,8 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	_ "github.com/swaggo/files"       // swagger embed files
+	_ "github.com/swaggo/gin-swagger" // gin-swagger middleware
 
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
@@ -12,8 +14,9 @@ import (
 // TODO: Add getting tasks by users
 // TODO: Handle get email
 // TODO: Add limit and offset for listing users
-func (u *UserHandler) GetByEmail(c *gin.Context) {
-	userToConvert, err := u.service.GetByEmail(c.Request.Context(), c.Param("email"))
+
+func (u *UserHandler) Authenticate(c *gin.Context) {
+	userToConvert, err := u.service.Authenticate(c.Request.Context(), c.PostForm("email"), c.PostForm("password"))
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -72,7 +75,7 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 		Password: userReq.Password,
 	})
 
-	if err = c.ShouldBindBodyWithJSON(&userReq); err != nil {
+	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}

@@ -11,7 +11,7 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (m UserRepo) GetByEmail(ctx context.Context, email string) (*repo.UserDb, error) {
+func (m UserRepo) Authenticate(ctx context.Context, email string) (*repo.UserDb, error) {
 	user := &repo.UserDb{}
 	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE email = $1", email)
 	if err != nil {
@@ -55,20 +55,16 @@ func (m UserRepo) GetUserTasks(ctx context.Context, id int) ([]*repo.TaskDb, err
 	return tasks, nil
 }
 
-func (m UserRepo) Insert(ctx context.Context, username, role, email, passwordHash string) error {
+func (m UserRepo) Insert(ctx context.Context, username, role, email string, passwordHash []byte) error {
 	query := "INSERT INTO users (username, role,  email, password_hash) VALUES ($1, $2, $3, $4)"
-	res, err := m.DB.ExecContext(ctx, query, username, role, email, passwordHash)
-	if err != nil {
-		return err
-	}
-	_, err = res.LastInsertId()
+	_, err := m.DB.ExecContext(ctx, query, username, role, email, passwordHash)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (m UserRepo) Patch(ctx context.Context, username, role, email, passwordHash string, id int) error {
+func (m UserRepo) Patch(ctx context.Context, username, role, email string, passwordHash []byte, id int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
@@ -92,7 +88,7 @@ func (m UserRepo) Patch(ctx context.Context, username, role, email, passwordHash
 		cnt++
 		args = append(args, email)
 	}
-	if passwordHash != "" {
+	if len(passwordHash) != 0 {
 		queryOrderTracker(&query, &isNotFirst)
 		query.WriteString(fmt.Sprintf(`password_hash = $%d `, cnt))
 		cnt++

@@ -2,17 +2,31 @@ package service
 
 import (
 	"context"
+	"math/rand/v2"
 	"strconv"
+	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (u UserServ) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
-	user, err := u.repo.GetByEmail(ctx, email)
+const usernameNAmount = 8
+
+func (u UserServ) Authenticate(ctx context.Context, email string, password string) (*domain.User, error) {
+	err := validateCreds(email, password)
 	if err != nil {
 		return nil, err
 	}
-	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, PasswordHash: user.PasswordHash, CreatedAt: user.CreatedAt}, nil
+	user, err := u.repo.Authenticate(ctx, email)
+	if err != nil {
+		return nil, err
+	}
+	err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
+	if err != nil {
+		return nil, err
+	}
+	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, CreatedAt: user.CreatedAt}, nil
 }
 
 func (u UserServ) GetById(ctx context.Context, id string) (*domain.User, error) {
@@ -24,7 +38,7 @@ func (u UserServ) GetById(ctx context.Context, id string) (*domain.User, error) 
 	if err != nil {
 		return nil, err
 	}
-	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, PasswordHash: user.PasswordHash, CreatedAt: user.CreatedAt}, nil
+	return &domain.User{ID: user.Id, Username: user.Username, Role: user.Role, Email: user.Email, CreatedAt: user.CreatedAt}, nil
 }
 
 func (u UserServ) List(ctx context.Context) ([]*domain.User, error) {
@@ -35,12 +49,11 @@ func (u UserServ) List(ctx context.Context) ([]*domain.User, error) {
 	var users []*domain.User
 	for _, user := range usersToConvert {
 		newTask := &domain.User{
-			ID:           user.Id,
-			Username:     user.Username,
-			Role:         user.Role,
-			Email:        user.Email,
-			CreatedAt:    user.CreatedAt,
-			PasswordHash: user.PasswordHash,
+			ID:        user.Id,
+			Username:  user.Username,
+			Role:      user.Role,
+			Email:     user.Email,
+			CreatedAt: user.CreatedAt,
 		}
 		users = append(users, newTask)
 	}
@@ -79,17 +92,37 @@ func (u UserServ) Patch(ctx context.Context, user *domain.SignupUser, id string)
 	if err != nil {
 		return err
 	}
-	//TODO: Password hashing
-	hashed_password := user.Password
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
 
-	return u.repo.Patch(ctx, user.Username, user.Role, user.Email, hashed_password, idInt)
+	return u.repo.Patch(ctx, user.Username, user.Role, user.Email, hashedPassword, idInt)
 }
 
 func (u UserServ) Insert(ctx context.Context, user *domain.SignupUser) error {
-	//TODO: Password hashing
-	hashed_password := user.Password
+	err := validateCreds(user.Email, user.Password)
+	if err != nil {
+		return err
+	}
+	if user.Role == "" {
+		user.Role = "user"
+	}
+	if user.Username == "" {
+		name := strings.Builder{}
+		name.WriteString("unknown")
+		for range usernameNAmount {
+			name.WriteString(strconv.Itoa(rand.N(9)))
+		}
+		user.Username = name.String()
+	}
 
-	return u.repo.Insert(ctx, user.Username, user.Role, user.Email, hashed_password)
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	return u.repo.Insert(ctx, user.Username, user.Role, user.Email, hashedPassword)
 }
 
 func (u UserServ) Delete(ctx context.Context, id string) error {

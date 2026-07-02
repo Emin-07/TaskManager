@@ -17,6 +17,8 @@ import (
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/postgres"
 	"github.com/Emin-07/TaskManager/internal/app"
 	"github.com/Emin-07/TaskManager/internal/core/service"
+
+	docs "github.com/Emin-07/TaskManager/cmd/web/docs"
 )
 
 func init() {
@@ -27,6 +29,12 @@ func init() {
 }
 
 func main() {
+	docs.SwaggerInfo.Title = "TaskManager"
+	docs.SwaggerInfo.Description = "App built in go with gin and postgres, basic todo app, with users and tasks"
+	docs.SwaggerInfo.Version = "0.1"
+	docs.SwaggerInfo.Host = "localhost"
+	docs.SwaggerInfo.BasePath = "/"
+
 	cfg := app.NewConfig()
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.User, cfg.Password, cfg.Host, cfg.Port, cfg.Name)
 

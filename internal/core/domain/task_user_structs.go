@@ -20,12 +20,11 @@ type CreateTask struct {
 }
 
 type User struct {
-	ID           int
-	Username     string
-	Role         string
-	Email        string
-	PasswordHash []byte
-	CreatedAt    time.Time
+	ID        int
+	Username  string
+	Role      string
+	Email     string
+	CreatedAt time.Time
 }
 
 type SignupUser struct {

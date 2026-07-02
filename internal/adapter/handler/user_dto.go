@@ -3,16 +3,16 @@ package handler
 import "time"
 
 type UserResponse struct {
-	Id        int       `json:"id"`
-	Username  string    `json:"username"`
-	Role      string    `json:"role"`
-	Email     string    `json:"email"`
-	CreatedAt time.Time `json:"created_at"`
+	Id        int       `json:"id" form:"id" binding:"required,gte=1"`
+	Username  string    `json:"username" form:"username" binding:"omitempty"`
+	Role      string    `json:"role" form:"role" binding:"oneof=user admin superadmin"`
+	Email     string    `json:"email" form:"email" binding:"email"`
+	CreatedAt time.Time `json:"created_at" form:"created_at"`
 }
 
 type UserRequest struct {
-	Username string `json:"username"`
-	Role     string `json:"role"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Username string `json:"username" form:"username" binding:"omitempty"`
+	Role     string `json:"role" form:"role" binding:"oneof=user admin superadmin"`
+	Email    string `json:"email" form:"email" binding:"email"`
+	Password string `json:"password" form:"password" binding:"min=8,max=32"`
 }
