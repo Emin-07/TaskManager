@@ -8,7 +8,7 @@ func (u *UserHandler) RegisterRoutes(r *gin.Engine) {
 	r.POST("/login", u.Authenticate)
 
 	authorized := r.Group("/")
-	authorized.Use(AuthRequired(u.tokenService))
+	authorized.Use(AuthRequiredUsers(u))
 	{
 		authorized.GET("/users/:id", u.GetById)
 		authorized.DELETE("/users/:id", u.Delete)

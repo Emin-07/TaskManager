@@ -5,8 +5,6 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-
-	"github.com/Emin-07/TaskManager/internal/core/port"
 )
 
 func SecureHeaders() gin.HandlerFunc {
@@ -22,11 +20,26 @@ func SecureHeaders() gin.HandlerFunc {
 	}
 }
 
-func AuthRequired(service port.TokenService) gin.HandlerFunc {
+func AuthRequiredTasks(t *TaskHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		_, err := service.ParseFromRequest(c.Request)
+		_, err := t.tokenService.ParseFromRequest(c.Request)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"message": fmt.Sprintf("to access this endpoint you need to authorize first. err : %v", err)})
+			return
+		}
+		c.Next()
+	}
+}
+
+func AuthRequiredUsers(u *UserHandler) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		data, err := u.tokenService.ParseFromRequest(c.Request)
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": fmt.Sprintf("to access this endpoint you need to authorize first. err : %v", err)})
+			return
+		}
+		if data["role"] != "admin" {
+			c.JSON(http.StatusUnavailableForLegalReasons, gin.H{"message": fmt.Sprintf("to access this endpoint you need to be admin. : %v", err)})
 			return
 		}
 		c.Next()
