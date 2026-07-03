@@ -23,7 +23,7 @@ func (t *TaskHandler) Get(c *gin.Context) {
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
-	taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"), data["id"])
+	taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"), data["id"], data["role"])
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -97,7 +97,7 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
-	err = t.service.Delete(c.Request.Context(), c.Param("id"), data["id"])
+	err = t.service.Delete(c.Request.Context(), c.Param("id"), data["id"], data["role"])
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
@@ -124,7 +124,7 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		Text:       taskReq.Text,
 		Priority:   taskReq.Priority,
 		ExpireDays: taskReq.ExpireDays,
-	}, id, data["id"])
+	}, id, data["id"], data["role"])
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)

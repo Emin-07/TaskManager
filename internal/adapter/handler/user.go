@@ -12,19 +12,13 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-// TODO: Add getting tasks by users
-
 func (u *UserHandler) Authenticate(c *gin.Context) {
 	userToConvert, err := u.service.Authenticate(c.Request.Context(), c.PostForm("email"), c.PostForm("password"))
-	role := c.PostForm("role")
-	if role == "" {
-		role = "user"
-	}
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID), role)
+	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID), userToConvert.Role)
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return

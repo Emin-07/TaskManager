@@ -13,7 +13,7 @@ import (
 
 func (m TaskRepo) List(ctx context.Context, limit, offset, userId int) ([]*repo.TaskDb, error) {
 	var tasks []*repo.TaskDb
-	query := "SELECT t.id, t.title, t.text, t.priority, t.created, t.expires, t.user_id FROM tasks t JOIN users u ON t.user_id = u.id WHERE (expires > CURRENT_TIMESTAMP AND user_id = $1) OR u.role = 'admin' ORDER BY id LIMIT $2 OFFSET $3"
+	query := "SELECT t.id, t.title, t.text, t.priority, t.created, t.expires, t.user_id FROM tasks t WHERE (t.expires > CURRENT_TIMESTAMP AND t.user_id = $1) OR EXISTS(SELECT 1 FROM users WHERE id = $1 AND role = 'admin') ORDER BY t.id LIMIT $2 OFFSET $3;"
 	err := m.DB.SelectContext(ctx, &tasks, query, userId, limit, offset)
 	if err != nil {
 		return nil, err
@@ -21,9 +21,9 @@ func (m TaskRepo) List(ctx context.Context, limit, offset, userId int) ([]*repo.
 	return tasks, nil
 }
 
-func (m TaskRepo) Get(ctx context.Context, id, userId int) (*repo.TaskDb, error) {
+func (m TaskRepo) Get(ctx context.Context, id, userId int, role string) (*repo.TaskDb, error) {
 	task := &repo.TaskDb{}
-	err := m.DB.GetContext(ctx, task, "SELECT t.id, t.title, t.text, t.priority, t.created, t.expires, t.user_id FROM tasks t JOIN users u ON t.user_id = u.id WHERE t.id = $1 AND (user_id = $2 OR u.role = 'admin')", id, userId)
+	err := m.DB.GetContext(ctx, task, "SELECT id, title, text, priority, created, expires, user_id FROM tasks WHERE id = $1 AND (user_id = $2 OR $3 = 'admin')", id, userId, role)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord
@@ -52,7 +52,7 @@ func queryOrderTracker(query *strings.Builder, isNotFirst *bool) {
 	}
 }
 
-func (m TaskRepo) Patch(ctx context.Context, title, text string, priority, expireDays, id, userId int) error {
+func (m TaskRepo) Patch(ctx context.Context, title, text, userRole string, priority, expireDays, id, userId int) error {
 	var query strings.Builder
 	var args []any
 	var isNotFirst bool
@@ -78,16 +78,15 @@ func (m TaskRepo) Patch(ctx context.Context, title, text string, priority, expir
 	}
 	if expireDays != 0 {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`tasks.expires = CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $%d) `, cnt))
+		query.WriteString(fmt.Sprintf(`expires = CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $%d) `, cnt))
 		cnt++
 		args = append(args, expireDays)
 	}
 	if len(args) == 0 {
 		return domain.ErrNoData
 	}
-	args = append(args, id)
-	args = append(args, userId)
-	query.WriteString(fmt.Sprintf("FROM users WHERE tasks.id = $%d AND (user_id = $%d OR role = 'admin')", cnt, cnt+1))
+	args = append(args, id, userId, userRole)
+	query.WriteString(fmt.Sprintf("WHERE id = $%d AND (user_id = $%d OR $%d = 'admin')", cnt, cnt+1, cnt+2))
 
 	result, err := m.DB.ExecContext(ctx, query.String(), args...)
 
@@ -103,8 +102,8 @@ func (m TaskRepo) Patch(ctx context.Context, title, text string, priority, expir
 	return nil
 }
 
-func (m TaskRepo) Delete(ctx context.Context, id, userId int) error {
-	_, err := m.DB.ExecContext(ctx, "DELETE FROM tasks t USING users u WHERE t.id = $1 AND (user_id = $2 OR role = 'admin')", id, userId)
+func (m TaskRepo) Delete(ctx context.Context, id, userId int, role string) error {
+	_, err := m.DB.ExecContext(ctx, "DELETE FROM tasks t WHERE t.id = $1 AND (t.user_id = $2 OR $3 = 'admin')", id, userId, role)
 	if err != nil {
 		return err
 	}

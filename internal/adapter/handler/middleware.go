@@ -35,11 +35,11 @@ func AuthRequiredUsers(u *UserHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		data, err := u.tokenService.ParseFromRequest(c.Request)
 		if err != nil {
-			c.JSON(http.StatusUnauthorized, gin.H{"message": fmt.Sprintf("to access this endpoint you need to authorize first. err : %v", err)})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": fmt.Sprintf("to access this endpoint you need to authorize first. err : %v", err)})
 			return
 		}
 		if data["role"] != "admin" {
-			c.JSON(http.StatusUnavailableForLegalReasons, gin.H{"message": fmt.Sprintf("to access this endpoint you need to be admin. : %v", err)})
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"message": fmt.Sprintf("to access this endpoint you need to be admin. : %v", err)})
 			return
 		}
 		c.Next()

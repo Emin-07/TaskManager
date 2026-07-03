@@ -17,7 +17,7 @@ func NewTaskService(repo port.TaskRepo) TaskServ {
 	return TaskServ{repo: repo}
 }
 
-func (t TaskServ) Get(ctx context.Context, id, userIdStr string) (*domain.Task, error) {
+func (t TaskServ) Get(ctx context.Context, id, userIdStr, role string) (*domain.Task, error) {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return nil, err
@@ -29,7 +29,7 @@ func (t TaskServ) Get(ctx context.Context, id, userIdStr string) (*domain.Task, 
 	if idInt < 1 {
 		return nil, fmt.Errorf("there is no task with negative or zero id")
 	}
-	task, err := t.repo.Get(ctx, idInt, userId)
+	task, err := t.repo.Get(ctx, idInt, userId, role)
 	if err != nil {
 		return nil, err
 	}
@@ -103,7 +103,7 @@ func (t TaskServ) Post(ctx context.Context, task *domain.CreateTask, userIdStr s
 	return t.repo.Insert(ctx, task.Title, task.Text, task.Priority, task.ExpireDays, userId)
 }
 
-func (t TaskServ) Delete(ctx context.Context, id, userIdStr string) error {
+func (t TaskServ) Delete(ctx context.Context, id, userIdStr, role string) error {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return err
@@ -115,10 +115,10 @@ func (t TaskServ) Delete(ctx context.Context, id, userIdStr string) error {
 	if idInt < 1 {
 		return fmt.Errorf("there is no task with negative or zero id")
 	}
-	return t.repo.Delete(ctx, idInt, userId)
+	return t.repo.Delete(ctx, idInt, userId, role)
 }
 
-func (t TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id, userIdStr string) error {
+func (t TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id, userIdStr, role string) error {
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return err
@@ -130,5 +130,5 @@ func (t TaskServ) Patch(ctx context.Context, task *domain.CreateTask, id, userId
 	if idInt < 1 {
 		return fmt.Errorf("there is no task with negative or zero id")
 	}
-	return t.repo.Patch(ctx, task.Title, task.Text, task.Priority, task.ExpireDays, idInt, userId)
+	return t.repo.Patch(ctx, task.Title, task.Text, role, task.Priority, task.ExpireDays, idInt, userId)
 }
