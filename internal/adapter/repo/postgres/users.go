@@ -13,7 +13,7 @@ import (
 
 func (m UserRepo) Authenticate(ctx context.Context, email string) (*repo.UserDb, error) {
 	user := &repo.UserDb{}
-	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE email = $1", email)
+	err := m.DB.GetContext(ctx, user, "SELECT * FROM users WHERE email = $1", email)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord
@@ -25,7 +25,7 @@ func (m UserRepo) Authenticate(ctx context.Context, email string) (*repo.UserDb,
 
 func (m UserRepo) GetById(ctx context.Context, id int) (*repo.UserDb, error) {
 	user := &repo.UserDb{}
-	err := m.DB.GetContext(ctx, &user, "SELECT * FROM users WHERE id = $1", id)
+	err := m.DB.GetContext(ctx, user, "SELECT * FROM users WHERE id = $1", id)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord

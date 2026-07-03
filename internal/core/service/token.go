@@ -12,6 +12,8 @@ import (
 	"github.com/golang-jwt/jwt/v5/request"
 )
 
+const jwtTokenExpiryDev = 30
+
 type TokenServ struct {
 	PrivKeyPath string
 	PubKeyPath  string
@@ -53,7 +55,7 @@ func (ts TokenServ) CreateToken(id, role string) (string, error) {
 	}
 	t := jwt.NewWithClaims(jwt.SigningMethodRS256,
 		&CustomClaims{
-			jwt.RegisteredClaims{Subject: id, ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute * 15))}, strings.ToLower(role),
+			jwt.RegisteredClaims{Subject: id, ExpiresAt: jwt.NewNumericDate(time.Now().UTC().Add(time.Minute * jwtTokenExpiryDev))}, strings.ToLower(role),
 		})
 	return t.SignedString(signKey)
 }
@@ -69,11 +71,14 @@ func (ts TokenServ) ParseFromRequest(r *http.Request) (map[string]string, error)
 			log.Fatal(err)
 		}
 		return jwt.ParseRSAPublicKeyFromPEM(verifyBytes)
-	}, request.WithClaims(&jwt.RegisteredClaims{}))
+	}, request.WithClaims(&CustomClaims{}))
 	if err != nil {
 		return nil, err
 	}
-	id := token.Claims.(*CustomClaims).Subject
+	id, err := token.Claims.(*CustomClaims).GetSubject()
+	if err != nil {
+		return nil, err
+	}
 	role := token.Claims.(*CustomClaims).Role
 
 	return map[string]string{"id": id, "role": role}, nil

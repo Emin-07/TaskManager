@@ -56,7 +56,7 @@ func (t TaskServ) List(ctx context.Context, limit, offset, userIdStr string) ([]
 	}
 
 	if offset == "" {
-		offsetInt = 5
+		offsetInt = 0
 	} else {
 		offsetInt, err = strconv.Atoi(offset)
 		if err != nil {

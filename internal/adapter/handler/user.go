@@ -33,6 +33,40 @@ func (u *UserHandler) Authenticate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
+func (u *UserHandler) SignUp(c *gin.Context) {
+	var userReq UserRequest
+
+	if err := c.ShouldBindBodyWithJSON(&userReq); err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	err := u.service.Insert(c.Request.Context(), &domain.SignupUser{
+		Username: userReq.Username,
+		Role:     userReq.Role,
+		Email:    userReq.Email,
+		Password: userReq.Password,
+	})
+
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	data, err := u.tokenService.ParseFromRequest(c.Request)
+	if err != nil {
+		c.AbortWithError(http.StatusUnauthorized, err)
+		return
+	}
+
+	token, err := u.tokenService.CreateToken(data["id"], data["role"])
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"token": token})
+}
+
 func (u *UserHandler) GetById(c *gin.Context) {
 	userToConvert, err := u.service.GetById(c.Request.Context(), c.Param("id"))
 	if err != nil {
@@ -63,28 +97,6 @@ func (u *UserHandler) ListUsers(c *gin.Context) {
 			CreatedAt: user.CreatedAt})
 	}
 	c.JSON(http.StatusOK, gin.H{"users": users})
-}
-
-func (u *UserHandler) SignUp(c *gin.Context) {
-	var userReq UserRequest
-
-	if err := c.ShouldBindBodyWithJSON(&userReq); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	err := u.service.Insert(c.Request.Context(), &domain.SignupUser{
-		Username: userReq.Username,
-		Role:     userReq.Role,
-		Email:    userReq.Email,
-		Password: userReq.Password,
-	})
-
-	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-
-	c.Redirect(http.StatusSeeOther, "/users")
 }
 
 func (u *UserHandler) Patch(c *gin.Context) {

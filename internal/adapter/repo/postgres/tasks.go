@@ -13,8 +13,9 @@ import (
 
 func (m TaskRepo) List(ctx context.Context, limit, offset, userId int) ([]*repo.TaskDb, error) {
 	var tasks []*repo.TaskDb
-	query := `SELECT * FROM tasks WHERE expires > CURRENT_TIMESTAMP AND user_id = $1 ORDER BY id LIMIT $2 OFFSET $3`
-	err := m.DB.SelectContext(ctx, &tasks, query, userId, limit, offset)
+	queryDev := `SELECT * FROM tasks WHERE user_id = $1 ORDER BY id LIMIT $2 OFFSET $3`
+	//query := `SELECT * FROM tasks WHERE expires > CURRENT_TIMESTAMP AND user_id = $1 ORDER BY id LIMIT $2 OFFSET $3`
+	err := m.DB.SelectContext(ctx, &tasks, queryDev, userId, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -22,29 +23,25 @@ func (m TaskRepo) List(ctx context.Context, limit, offset, userId int) ([]*repo.
 }
 
 func (m TaskRepo) Get(ctx context.Context, id, userId int) (*repo.TaskDb, error) {
-	task := repo.TaskDb{}
-	err := m.DB.GetContext(ctx, &task, "SELECT * FROM tasks WHERE id = $1 AND user_id = $2", id, userId)
+	task := &repo.TaskDb{}
+	err := m.DB.GetContext(ctx, task, "SELECT * FROM tasks WHERE id = $1 AND user_id = $2", id, userId)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, domain.ErrNoRecord
 		}
 		return nil, err
 	}
-	return &task, nil
+	return task, nil
 }
 
 func (m TaskRepo) Insert(ctx context.Context, title, text string, priority, expireDays, userId int) error {
 	query := `INSERT INTO tasks (title, text, priority, expires, user_id) VALUES ($1, $2, $3, CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $4), $5)`
-	res, err := m.DB.ExecContext(ctx, query, title, text, priority, expireDays, userId)
+	_, err := m.DB.ExecContext(ctx, query, title, text, priority, expireDays, userId)
 
 	if err != nil {
 		return err
 	}
 
-	_, err = res.LastInsertId()
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
