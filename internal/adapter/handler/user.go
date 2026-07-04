@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,6 +13,17 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
+// @Summary login
+// @Description login to get token for accessing other endpoints
+// @Tags auth
+// @Accept x-www-form-urlencoded,multipart/form-data
+// @Produce json
+// @Param email formData string true "User email"
+// @Param password formData string true "User password" minlength(8)
+// @Success 200 {object} map[string]string "Token for accessing endpoints"
+// @Failure 400 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /login [post]
 func (u *UserHandler) Authenticate(c *gin.Context) {
 	userToConvert, err := u.service.Authenticate(c.Request.Context(), c.PostForm("email"), c.PostForm("password"))
 	if err != nil {
@@ -27,6 +39,18 @@ func (u *UserHandler) Authenticate(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
+// @Summary signup
+// @Description create a new user
+// @Security ApiKeyAuth
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param credentials body handler.UserRequest true "Credentials to signup"
+// @Success 200 {object} map[string]string "Token for accessing endpoints"
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users [post]
 func (u *UserHandler) SignUp(c *gin.Context) {
 	var userReq UserRequest
 
@@ -61,9 +85,26 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"token": token})
 }
 
+// @Summary get user
+// @Security ApiKeyAuth
+// @Description get user from database by id
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} handler.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 404 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/:id [get]
 func (u *UserHandler) GetById(c *gin.Context) {
 	userToConvert, err := u.service.GetById(c.Request.Context(), c.Param("id"))
 	if err != nil {
+		if errors.Is(err, domain.ErrNoRecord) {
+			c.JSON(http.StatusNotFound, gin.H{"task": fmt.Sprintf("task with %s not found", c.Param("id"))})
+			return
+		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
@@ -75,6 +116,17 @@ func (u *UserHandler) GetById(c *gin.Context) {
 		CreatedAt: userToConvert.CreatedAt}})
 }
 
+// @Summary get users
+// @Security ApiKeyAuth
+// @Description get users from database by id
+// @Tags users
+// @Accept json
+// @Produce json
+// @Success 200 {array} handler.UserResponse
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users [get]
 func (u *UserHandler) ListUsers(c *gin.Context) {
 	usersToConvert, err := u.service.List(c.Request.Context())
 	if err != nil {
@@ -93,6 +145,21 @@ func (u *UserHandler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"users": users})
 }
 
+// @Summary patch user
+// @Security ApiKeyAuth
+// @Description patch user from database by id
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Param user body handler.UserRequest true "user schema for patching a user"
+// @Success 200 {object} map[string]string
+// @Success 200 {object} map[string]string
+// @Success 204 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/:id [patch]
 func (u *UserHandler) Patch(c *gin.Context) {
 	var userReq UserRequest
 
@@ -107,21 +174,41 @@ func (u *UserHandler) Patch(c *gin.Context) {
 		Email:    userReq.Email,
 		Password: userReq.Password,
 	}, id)
-
-	if err = c.ShouldBindBodyWithJSON(&userReq); err != nil {
+	if err != nil {
+		if errors.Is(err, domain.ErrNoRecord) {
+			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", id)})
+			return
+		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/users/%d", id))
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("user with id %d patched", id)})
 }
 
+// @Summary delete user
+// @Security ApiKeyAuth
+// @Description delete user from database by id
+// @Tags users
+// @Accept json
+// @Produce json
+// @Param id path int true "User ID"
+// @Success 200 {object} map[string]string
+// @Success 204 {object} map[string]string
+// @Failure 400 {object} map[string]string
+// @Failure 401 {object} map[string]string
+// @Failure 500 {object} map[string]string
+// @Router /users/:id [delete]
 func (u *UserHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
 	if err := u.service.Delete(c.Request.Context(), id); err != nil {
+		if errors.Is(err, domain.ErrNoRecord) {
+			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", id)})
+			return
+		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.Redirect(http.StatusSeeOther, fmt.Sprintf("/users/%v", id))
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("user  with id %d deleted", id)})
 }

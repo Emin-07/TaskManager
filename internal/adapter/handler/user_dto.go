@@ -16,3 +16,8 @@ type UserRequest struct {
 	Email    string `json:"email" form:"email" binding:"email"`
 	Password string `json:"password" form:"password" binding:"min=8,max=32"`
 }
+
+type UserLogin struct {
+	Email    string `json:"email" form:"email" binding:"email"`
+	Password string `json:"password" form:"password" binding:"min=8,max=32"`
+}

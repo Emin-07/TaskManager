@@ -3,7 +3,7 @@ package handler
 import "github.com/gin-gonic/gin"
 
 func (u *UserHandler) RegisterRoutes(r *gin.Engine) {
-	r.Use(SecureHeaders())
+	r.Use(SecureHeaders(), ErrorHandler())
 	r.POST("/users", u.SignUp)
 	r.POST("/login", u.Authenticate)
 

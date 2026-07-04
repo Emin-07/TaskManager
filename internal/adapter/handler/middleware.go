@@ -20,6 +20,19 @@ func SecureHeaders() gin.HandlerFunc {
 	}
 }
 
+func ErrorHandler() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+		if len(c.Errors) > 0 && c.Writer.Written() {
+			status := c.Writer.Status()
+			if status == http.StatusOK || status == 0 {
+				status = http.StatusInternalServerError
+			}
+			c.JSON(status, gin.H{"error": c.Errors[0].Error()})
+		}
+	}
+}
+
 func AuthRequiredTasks(t *TaskHandler) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, err := t.tokenService.ParseFromRequest(c.Request)

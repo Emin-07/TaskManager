@@ -7,6 +7,8 @@ import (
 	"github.com/gin-gonic/gin"
 	swaggerFiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+
+	_ "github.com/Emin-07/TaskManager/cmd/web/docs"
 )
 
 func (app *App) NewServer() *http.Server {

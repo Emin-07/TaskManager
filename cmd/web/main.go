@@ -33,11 +33,14 @@ func init() {
 	}
 }
 
+// @securityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
 func main() {
 	docs.SwaggerInfo.Title = "TaskManager"
-	docs.SwaggerInfo.Description = "App built in go with gin and postgres, basic todo app, with users and tasks"
-	docs.SwaggerInfo.Version = "0.1"
-	docs.SwaggerInfo.Host = "localhost"
+	docs.SwaggerInfo.Description = "Task managing api with users and tasks"
+	docs.SwaggerInfo.Version = "1.0"
+	docs.SwaggerInfo.Host = "localhost:8080"
 	docs.SwaggerInfo.BasePath = "/"
 
 	cfg := app.NewConfig()

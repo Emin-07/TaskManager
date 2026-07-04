@@ -103,9 +103,14 @@ func (m TaskRepo) Patch(ctx context.Context, title, text, userRole string, prior
 }
 
 func (m TaskRepo) Delete(ctx context.Context, id, userId int, role string) error {
-	_, err := m.DB.ExecContext(ctx, "DELETE FROM tasks t WHERE t.id = $1 AND (t.user_id = $2 OR $3 = 'admin')", id, userId, role)
+	result, err := m.DB.ExecContext(ctx, "DELETE FROM tasks t WHERE t.id = $1 AND (t.user_id = $2 OR $3 = 'admin')", id, userId, role)
 	if err != nil {
 		return err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		return domain.ErrNoRecord
 	}
 	return nil
 }
