@@ -1,7 +1,5 @@
-<!--
-  English version: jump to [#english](#english)
-  Русская версия: перейти к [#russian](#russian)
--->
+English version: jump to [#english](#english)
+Русская версия: перейти к [#russian](#russian)
 
 <div id="english"></div>
 
