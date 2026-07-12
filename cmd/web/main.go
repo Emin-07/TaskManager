@@ -13,12 +13,13 @@ import (
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 
+	"github.com/pressly/goose/v3"
+
+	"github.com/Emin-07/TaskManager/cmd/web/docs"
 	"github.com/Emin-07/TaskManager/internal/adapter/handler"
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/postgres"
 	"github.com/Emin-07/TaskManager/internal/app"
 	"github.com/Emin-07/TaskManager/internal/core/service"
-
-	docs "github.com/Emin-07/TaskManager/cmd/web/docs"
 )
 
 const (
@@ -50,6 +51,19 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	if err := goose.SetDialect("postgres"); err != nil {
+		log.Fatalf("Failed to set goose dialect: %v", err)
+	}
+
+	ctxMigration, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	if err := goose.UpContext(ctxMigration, db.DB, "migrations"); err != nil {
+		log.Fatalf("Migration failed: %v", err)
+	}
+
+	log.Println("Migrations applied successfully!")
 
 	userRepo := postgres.NewUserRepo(db)
 	taskRepo := postgres.NewTaskRepo(db)

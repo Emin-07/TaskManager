@@ -430,8 +430,6 @@ paths:
             additionalProperties:
               type: string
             type: object
-      security:
-      - ApiKeyAuth: []
       summary: signup
       tags:
       - auth

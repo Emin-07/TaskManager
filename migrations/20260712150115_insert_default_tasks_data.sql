@@ -1,8 +1,4 @@
-INSERT INTO users (username, role, email, password_hash) VALUES
-                                                             ('admin', 'admin', 'admin@email.com', 'admin123'),
-                                                             ('test', 'user', 'test@email.com', '12345678'),
-                                                             ('john_doe_2007', 'user', 'johndoe2007@email.com', 'megaSecret');
-
+-- +goose Up
 INSERT INTO tasks (title, text, priority, user_id) VALUES
                                                        ('Do some admin stuff', '', 2, 1),
                                                        ('Do some other admin stuff', 'idk', 2, 1),
@@ -14,3 +10,5 @@ INSERT INTO tasks (title, text, priority, user_id) VALUES
 
                                                        ('Workout', 'go to the gym and workout', 2, 3),
                                                        ('Have a Meal', '', 0, 3);
+-- +goose Down
+DELETE FROM tasks;

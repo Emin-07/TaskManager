@@ -3,7 +3,7 @@ package handler
 import "github.com/gin-gonic/gin"
 
 func (t *TaskHandler) RegisterRoutes(r *gin.Engine) {
-	r.Use(SecureHeaders(), ErrorHandler())
+	r.Use(SecureHeaders())
 	authorized := r.Group("/")
 	authorized.Use(AuthRequiredTasks(t))
 	{

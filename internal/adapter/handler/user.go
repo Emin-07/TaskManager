@@ -41,7 +41,6 @@ func (u *UserHandler) Authenticate(c *gin.Context) {
 
 // @Summary signup
 // @Description create a new user
-// @Security ApiKeyAuth
 // @Tags auth
 // @Accept json
 // @Produce json

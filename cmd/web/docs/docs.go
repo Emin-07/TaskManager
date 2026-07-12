@@ -506,11 +506,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
                 "description": "create a new user",
                 "consumes": [
                     "application/json"
