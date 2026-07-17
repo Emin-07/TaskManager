@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -43,7 +44,7 @@ func (t *TaskHandler) Get(c *gin.Context) {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		task := &TaskResponse{
+		task := TaskResponse{
 			Id:       taskToConvert.ID,
 			Title:    taskToConvert.Title,
 			Text:     taskToConvert.Text,
@@ -56,12 +57,18 @@ func (t *TaskHandler) Get(c *gin.Context) {
 			log.Printf("error occurred when setting cache, err: %v\n", err)
 		}
 		c.JSON(http.StatusOK, gin.H{"task": task})
+		return
 	} else if err != nil {
 		log.Printf("error occurred when getting from cache, err: %v\n", err)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{"task": taskFromCache})
+	var res TaskResponse
+	err = json.Unmarshal([]byte(taskFromCache), &res)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"task": res})
 }
 
 // @Summary list tasks
@@ -80,6 +87,12 @@ func (t *TaskHandler) Get(c *gin.Context) {
 func (t *TaskHandler) List(c *gin.Context) {
 	limit := c.Query("limit")
 	offset := c.Query("offset")
+	if limit == "" {
+		limit = "5"
+	}
+	if offset == "" {
+		offset = "0"
+	}
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"reflect"
 	"time"
 
@@ -28,6 +29,8 @@ func (rc RateAndCacheServ) Set(ctx context.Context, name, id, userId string, val
 	if reflect.ValueOf(val).Kind() == reflect.Struct {
 		res, err := json.Marshal(val)
 		if err != nil {
+			fmt.Println(val)
+			fmt.Println(res)
 			return err
 		}
 		return rc.repo.Set(ctx, name, id, userId, res, duration)
