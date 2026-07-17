@@ -18,6 +18,7 @@ import (
 	"github.com/Emin-07/TaskManager/cmd/web/docs"
 	"github.com/Emin-07/TaskManager/internal/adapter/handler"
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/postgres"
+	"github.com/Emin-07/TaskManager/internal/adapter/repo/redis"
 	"github.com/Emin-07/TaskManager/internal/app"
 	"github.com/Emin-07/TaskManager/internal/core/service"
 )
@@ -67,13 +68,15 @@ func main() {
 
 	userRepo := postgres.NewUserRepo(db)
 	taskRepo := postgres.NewTaskRepo(db)
+	redisRepo := redis.NewRedisClientRepo()
 
 	userService := service.NewUserService(userRepo)
 	taskService := service.NewTaskService(taskRepo)
 	tokenService := service.NewTokenService(privKeyPath, pubKeyPath)
+	redisService := service.NewRateAndCacheService(redisRepo)
 
-	userHandler := handler.NewUserHandler(userService, tokenService)
-	taskHandler := handler.NewTaskHandler(taskService, tokenService)
+	userHandler := handler.NewUserHandler(userService, tokenService, redisService)
+	taskHandler := handler.NewTaskHandler(taskService, tokenService, redisService)
 
 	application := app.NewApp(app.WithTaskHandler(taskHandler), app.WithUserHandler(userHandler))
 	srv := application.NewServer()

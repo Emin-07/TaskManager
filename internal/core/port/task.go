@@ -9,7 +9,7 @@ import (
 
 type TaskService interface {
 	Get(ctx context.Context, id, userIdStr, role string) (*domain.Task, error)
-	List(ctx context.Context, limit, offset, userIdStr string) ([]*domain.Task, error)
+	List(ctx context.Context, limit, offset int, userIdStr string) ([]*domain.Task, error)
 	Post(ctx context.Context, task *domain.CreateTask, userIdStr string) error
 	Delete(ctx context.Context, id, userIdStr, role string) error
 	Patch(ctx context.Context, task *domain.CreateTask, id, userIdStr, role string) error

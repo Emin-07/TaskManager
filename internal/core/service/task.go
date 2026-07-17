@@ -43,32 +43,18 @@ func (t TaskServ) Get(ctx context.Context, id, userIdStr, role string) (*domain.
 		UserId:    task.UserId,
 	}, nil
 }
-func (t TaskServ) List(ctx context.Context, limit, offset, userIdStr string) ([]*domain.Task, error) {
-	var limitInt, offsetInt int
+func (t TaskServ) List(ctx context.Context, limit, offset int, userIdStr string) ([]*domain.Task, error) {
 	var err error
-	if limit == "" {
-		limitInt = 5
-	} else {
-		limitInt, err = strconv.Atoi(limit)
-		if err != nil {
-			return nil, err
-		}
+	if limit == 0 {
+		limit = 5
 	}
 
-	if offset == "" {
-		offsetInt = 0
-	} else {
-		offsetInt, err = strconv.Atoi(offset)
-		if err != nil {
-			return nil, err
-		}
-	}
 	userId, err := strconv.Atoi(userIdStr)
 	if err != nil {
 		return nil, err
 	}
 
-	tasksToConvert, err := t.repo.List(ctx, limitInt, offsetInt, userId)
+	tasksToConvert, err := t.repo.List(ctx, limit, offset, userId)
 	if err != nil {
 		return nil, err
 	}

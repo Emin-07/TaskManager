@@ -1,6 +1,8 @@
 package handler
 
-import "github.com/gin-gonic/gin"
+import (
+	"github.com/gin-gonic/gin"
+)
 
 func (u *UserHandler) RegisterRoutes(r *gin.Engine) {
 	r.Use(SecureHeaders())
