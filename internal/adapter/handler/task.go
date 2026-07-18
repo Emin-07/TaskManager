@@ -33,12 +33,16 @@ func (t *TaskHandler) Get(c *gin.Context) {
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
-	taskFromCache, err := t.rateAndCacheService.Get(c.Request.Context(), "task", c.Param("id"), data["id"])
+
+	taskID := c.Param("id")
+	userID := data["id"]
+
+	taskFromCache, err := t.rateAndCacheService.Get(c.Request.Context(), "task", taskID, userID)
 	if errors.Is(err, domain.ErrKeyNotFound) {
-		taskToConvert, err := t.service.Get(c.Request.Context(), c.Param("id"), data["id"], data["role"])
+		taskToConvert, err := t.service.Get(c.Request.Context(), taskID, userID, data["role"])
 		if err != nil {
 			if errors.Is(err, domain.ErrNoRecord) {
-				c.JSON(http.StatusNotFound, gin.H{"task": fmt.Sprintf("task with %d not found", data["id"])})
+				c.JSON(http.StatusNotFound, gin.H{"task": fmt.Sprintf("task with %s not found", taskID)})
 				return
 			}
 			c.AbortWithError(http.StatusBadRequest, err)
@@ -52,7 +56,7 @@ func (t *TaskHandler) Get(c *gin.Context) {
 			Expires:  taskToConvert.Expires,
 		}
 
-		err = t.rateAndCacheService.Set(c.Request.Context(), "task", strconv.Itoa(task.Id), data["id"], task, time.Minute*15)
+		err = t.rateAndCacheService.Set(c.Request.Context(), "task", strconv.Itoa(task.Id), userID, task, time.Minute*15)
 		if err != nil {
 			log.Printf("error occurred when setting cache, err: %v\n", err)
 		}
@@ -109,11 +113,14 @@ func (t *TaskHandler) List(c *gin.Context) {
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
+
+	userID := data["id"]
+
 	var cacheTasks = make([]string, limitInt)
 	var cacheErr error
 
 	for i := offsetInt; limitInt > i-offsetInt; i++ {
-		taskFromCache, err := t.rateAndCacheService.Get(c.Request.Context(), "task", c.Param("id"), data["id"])
+		taskFromCache, err := t.rateAndCacheService.Get(c.Request.Context(), "task", strconv.Itoa(i), userID)
 		if err != nil {
 			cacheErr = err
 			break
@@ -134,7 +141,7 @@ func (t *TaskHandler) List(c *gin.Context) {
 	} else if !errors.Is(err, domain.ErrKeyNotFound) && err != nil {
 		log.Printf("error occurred when getting from cache, err: %v\n", err)
 	} else {
-		tasksToConvert, err := t.service.List(c.Request.Context(), limitInt, offsetInt, data["id"])
+		tasksToConvert, err := t.service.List(c.Request.Context(), limitInt, offsetInt, userID)
 		if err != nil {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
@@ -153,7 +160,7 @@ func (t *TaskHandler) List(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"tasks": tasks})
 
 		for i := offsetInt; limitInt > i-offsetInt; i++ {
-			err := t.rateAndCacheService.Set(c.Request.Context(), "task", c.Param("id"), data["id"], tasks[i], time.Minute*15)
+			err := t.rateAndCacheService.Set(c.Request.Context(), "task", strconv.Itoa(i), userID, tasks[i], time.Minute*15)
 			if err != nil {
 				log.Printf("error occurred when setting cache, err: %v\n", err)
 			}
@@ -216,20 +223,29 @@ func (t *TaskHandler) Post(c *gin.Context) {
 func (t *TaskHandler) Delete(c *gin.Context) {
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", data["id"])})
-			return
-		}
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
-	err = t.service.Delete(c.Request.Context(), c.Param("id"), data["id"], data["role"])
+
+	userID := data["id"]
+	taskID := c.Param("id")
+
+	err = t.service.Delete(c.Request.Context(), c.Param("id"), userID, data["role"])
 	if err != nil {
+		if errors.Is(err, domain.ErrNoRecord) {
+			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %v", taskID)})
+			return
+		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %d deleted", data["id"])})
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %v deleted", taskID)})
+
+	err = t.rateAndCacheService.Del(c.Request.Context(), "task", taskID, userID)
+	if err != nil {
+		log.Println(err)
+	}
 }
 
 // @Summary patch task
@@ -252,7 +268,10 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
-	id := c.Param("id")
+
+	userID := data["id"]
+	taskID := c.Param("id")
+
 	var taskReq TaskRequest
 	if err := c.ShouldBindBodyWithJSON(&taskReq); err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -264,17 +283,21 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		Text:       taskReq.Text,
 		Priority:   taskReq.Priority,
 		ExpireDays: taskReq.ExpireDays,
-	}, id, data["id"], data["role"])
+	}, taskID, userID, data["role"])
 
 	if err != nil {
 		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", data["id"])})
+			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %v", taskID)})
 			return
 		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %d patched", data["id"])})
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %v patched", taskID)})
 
+	err = t.rateAndCacheService.Del(c.Request.Context(), "task", taskID, userID)
+	if err != nil {
+		log.Println(err)
+	}
 }

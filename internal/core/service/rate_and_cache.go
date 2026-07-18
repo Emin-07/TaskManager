@@ -40,3 +40,7 @@ func (rc RateAndCacheServ) Set(ctx context.Context, name, id, userId string, val
 func (rc RateAndCacheServ) Get(ctx context.Context, name, id, userId string) (string, error) {
 	return rc.repo.Get(ctx, name, id, userId)
 }
+
+func (rc RateAndCacheServ) Del(ctx context.Context, name, id, userId string) error {
+	return rc.repo.Del(ctx, name, id, userId)
+}

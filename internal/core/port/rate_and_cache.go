@@ -11,6 +11,7 @@ type RateAndCacheService interface {
 
 	Set(ctx context.Context, name, id, userId string, val any, duration time.Duration) error
 	Get(ctx context.Context, name, id, userId string) (string, error)
+	Del(ctx context.Context, name, id, userId string) error
 }
 
 type RateAndCacheRepo interface {
@@ -19,4 +20,5 @@ type RateAndCacheRepo interface {
 
 	Set(ctx context.Context, name, id, userId string, val any, duration time.Duration) error
 	Get(ctx context.Context, name, id, userId string) (string, error)
+	Del(ctx context.Context, name, id, userId string) error
 }

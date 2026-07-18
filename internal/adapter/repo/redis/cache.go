@@ -23,3 +23,7 @@ func (rs *RedisClientRepo) Get(ctx context.Context, name, id, userId string) (st
 	}
 	return val, nil
 }
+
+func (rs *RedisClientRepo) Del(ctx context.Context, name, id, userId string) error {
+	return rs.Rdb.Del(ctx, keyMaker(name, id, userId)).Err()
+}
