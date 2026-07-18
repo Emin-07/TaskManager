@@ -160,7 +160,7 @@ func (t *TaskHandler) List(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"tasks": tasks})
 
 		for i := offsetInt; limitInt > i-offsetInt; i++ {
-			err := t.rateAndCacheService.Set(c.Request.Context(), "task", strconv.Itoa(i), userID, tasks[i], time.Minute*15)
+			err := t.rateAndCacheService.Set(c.Request.Context(), "task", strconv.Itoa(i+1), userID, tasks[i], time.Minute*15)
 			if err != nil {
 				log.Printf("error occurred when setting cache, err: %v\n", err)
 			}
