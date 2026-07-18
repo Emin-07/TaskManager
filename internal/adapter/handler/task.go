@@ -122,7 +122,14 @@ func (t *TaskHandler) List(c *gin.Context) {
 	}
 
 	if cacheErr == nil {
-		c.JSON(http.StatusOK, gin.H{"tasks": cacheTasks})
+		results := make([]TaskResponse, len(cacheTasks))
+		for i, cacheTask := range cacheTasks {
+			err := json.Unmarshal([]byte(cacheTask), &results[i])
+			if err != nil {
+				log.Printf("err: %v, task: %v\n", err, cacheTask)
+			}
+		}
+		c.JSON(http.StatusOK, gin.H{"tasks": results})
 		return
 	} else if !errors.Is(err, domain.ErrKeyNotFound) && err != nil {
 		log.Printf("error occurred when getting from cache, err: %v\n", err)
@@ -132,9 +139,9 @@ func (t *TaskHandler) List(c *gin.Context) {
 			c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
-		var tasks []*TaskResponse
+		var tasks []TaskResponse
 		for _, task := range tasksToConvert {
-			tasks = append(tasks, &TaskResponse{
+			tasks = append(tasks, TaskResponse{
 				Id:       task.ID,
 				Title:    task.Title,
 				Text:     task.Text,
