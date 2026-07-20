@@ -22,9 +22,13 @@ func NewRedisClientRepo() *RedisClientRepo {
 	})}
 }
 
-func keyMaker(name, id, userId string) string {
+func taskKeyMaker(name, id, userId string) string {
 	if userId == "" {
 		return fmt.Sprintf("%s:%s", name, id)
 	}
 	return fmt.Sprintf("%s:%s-%s", name, id, userId)
+}
+
+func userKeyMaker(id string) string {
+	return fmt.Sprintf("user:%v", id)
 }

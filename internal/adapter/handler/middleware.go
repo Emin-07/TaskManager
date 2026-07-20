@@ -3,8 +3,12 @@ package handler
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+
+	"github.com/Emin-07/TaskManager/internal/core/port"
 )
 
 func SecureHeaders() gin.HandlerFunc {
@@ -20,8 +24,23 @@ func SecureHeaders() gin.HandlerFunc {
 	}
 }
 
-func RateLimit() gin.HandlerFunc {
+func RateLimit(tokenServ port.TokenService, redisServ port.RateAndCacheService) gin.HandlerFunc {
 	return func(c *gin.Context) {
+		data, _ := tokenServ.ParseFromRequest(c.Request)
+		n, err := redisServ.Increment(c.Request.Context(), data["id"])
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error happened when increment n for rate limit : %v", err)})
+			return
+		}
+		rateLimit, err := strconv.Atoi(os.Getenv("RATE_LIMIT"))
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			return
+		}
+		if n >= rateLimit {
+			c.JSON(http.StatusTooManyRequests, gin.H{"message": "Rate limit exceeded, wait few seconds to access endpoints"})
+			return
+		}
 		c.Next()
 	}
 }

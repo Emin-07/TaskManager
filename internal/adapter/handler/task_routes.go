@@ -5,7 +5,7 @@ import (
 )
 
 func (t *TaskHandler) RegisterRoutes(r *gin.Engine) {
-	r.Use(SecureHeaders())
+	r.Use(SecureHeaders(), RateLimit(t.tokenService, t.rateAndCacheService))
 	authorized := r.Group("/")
 	authorized.Use(AuthRequiredTasks(t))
 	{

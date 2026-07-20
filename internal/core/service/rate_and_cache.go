@@ -18,11 +18,11 @@ func NewRateAndCacheService(repo port.RateAndCacheRepo) RateAndCacheServ {
 	return RateAndCacheServ{repo: repo}
 }
 
-func (rc RateAndCacheServ) Increment(ctx context.Context, name, id, userId string) (int, error) {
-	return rc.repo.Increment(ctx, name, id, userId)
+func (rc RateAndCacheServ) Increment(ctx context.Context, id string) (int, error) {
+	return rc.repo.Increment(ctx, id)
 }
-func (rc RateAndCacheServ) DecrementBy(ctx context.Context, name, id, userId string, n int, timeToLive time.Duration) (int, error) {
-	return rc.repo.DecrementBy(ctx, name, id, userId, n, timeToLive)
+func (rc RateAndCacheServ) DecrementBy(ctx context.Context, id string, n int, timeToLive time.Duration) (int, error) {
+	return rc.repo.DecrementBy(ctx, id, n, timeToLive)
 }
 
 func (rc RateAndCacheServ) Set(ctx context.Context, name, id, userId string, val any, duration time.Duration) error {

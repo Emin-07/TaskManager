@@ -9,10 +9,11 @@ import (
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 )
 
-func (rs *RedisClientRepo) Increment(ctx context.Context, name, id, userId string) (int, error) {
-	val, err := rs.Get(ctx, name, id, userId)
+func (rs *RedisClientRepo) Increment(ctx context.Context, id string) (int, error) {
+	key := userKeyMaker(id)
+	val, err := rs.Rdb.Get(ctx, key).Result()
 	if errors.Is(err, domain.ErrKeyNotFound) {
-		return 1, rs.Set(ctx, name, id, userId, 1, time.Minute)
+		return 1, rs.Rdb.Set(ctx, key, 1, time.Minute).Err()
 	} else if err != nil {
 		return 0, err
 	}
@@ -22,15 +23,16 @@ func (rs *RedisClientRepo) Increment(ctx context.Context, name, id, userId strin
 		return 0, err
 	}
 	valN++
-	err = rs.Set(ctx, name, id, userId, valN, time.Minute)
+	err = rs.Rdb.Set(ctx, id, valN, time.Minute).Err()
 	if err != nil {
 		return 0, err
 	}
 	return valN, nil
 }
 
-func (rs *RedisClientRepo) DecrementBy(ctx context.Context, name, id, userId string, n int, timeToLive time.Duration) (int, error) {
-	val, err := rs.Get(ctx, name, id, userId)
+func (rs *RedisClientRepo) DecrementBy(ctx context.Context, id string, n int, timeToLive time.Duration) (int, error) {
+	key := userKeyMaker(id)
+	val, err := rs.Rdb.Get(ctx, key).Result()
 	if errors.Is(err, domain.ErrKeyNotFound) {
 		return 0, nil
 	} else if err != nil {
@@ -42,11 +44,11 @@ func (rs *RedisClientRepo) DecrementBy(ctx context.Context, name, id, userId str
 		return 0, err
 	}
 	if valN == 0 || valN <= n {
-		rs.Rdb.Del(ctx, keyMaker(name, id, userId))
+		rs.Rdb.Del(ctx, key)
 		return 0, nil
 	}
 	valN -= n
-	err = rs.Set(ctx, name, id, userId, valN, timeToLive)
+	err = rs.Rdb.Set(ctx, key, val, timeToLive).Err()
 	if err != nil {
 		return 0, err
 	}

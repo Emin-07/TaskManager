@@ -5,7 +5,7 @@ import (
 )
 
 func (u *UserHandler) RegisterRoutes(r *gin.Engine) {
-	r.Use(SecureHeaders())
+	r.Use(SecureHeaders(), RateLimit(u.tokenService, u.rateAndCacheService))
 	r.POST("/users", u.SignUp)
 	r.POST("/login", u.Authenticate)
 
