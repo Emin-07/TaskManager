@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -29,18 +30,19 @@ func RateLimit(tokenServ port.TokenService, redisServ port.RateAndCacheService) 
 		data, _ := tokenServ.ParseFromRequest(c.Request)
 		n, err := redisServ.Increment(c.Request.Context(), data["id"])
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error happened when increment n for rate limit : %v", err)})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("error happened when increment n for rate limit : %v", err)})
 			return
 		}
 		rateLimit, err := strconv.Atoi(os.Getenv("RATE_LIMIT"))
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"message": err})
+			c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"message": err})
 			return
 		}
 		if n >= rateLimit {
-			c.JSON(http.StatusTooManyRequests, gin.H{"message": "Rate limit exceeded, wait few seconds to access endpoints"})
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"message": "Rate limit exceeded, wait few seconds to access endpoints"})
 			return
 		}
+		log.Println(n, rateLimit)
 		c.Next()
 	}
 }

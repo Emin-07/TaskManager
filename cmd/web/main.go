@@ -52,6 +52,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer db.Close()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		log.Fatalf("Failed to set goose dialect: %v", err)
