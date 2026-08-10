@@ -5,6 +5,7 @@ package main
 
 import (
 	"encoding/csv"
+	"log"
 	"os"
 	"time"
 
@@ -62,7 +63,11 @@ func init() {
 	createCmd.Flags().StringVarP(&createTask, "task", "t", "nil", "Used to create description of the new task")
 	createCmd.Flags().StringVarP(&createDate, "date", "d", (time.Now()).UTC().Format(time.RFC3339), "Used to create date of the new task")
 
-	createCmd.MarkFlagRequired("name")
+	err := createCmd.MarkFlagRequired("name")
+	if err != nil {
+		log.Println(err)
+		return
+	}
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:

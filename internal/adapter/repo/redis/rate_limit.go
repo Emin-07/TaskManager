@@ -18,7 +18,7 @@ func (rs *RedisClientRepo) Increment(ctx context.Context, id string) (int, error
 	return int(val), nil
 }
 
-func (rs *RedisClientRepo) DecrementBy(ctx context.Context, id string) (int, error) {
+func (rs *RedisClientRepo) Decrement(ctx context.Context, id string) (int, error) {
 	key := userKeyMaker(id)
 	val, err := rs.Rdb.Decr(ctx, key).Result()
 	if err != nil {

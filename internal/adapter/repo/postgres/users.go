@@ -98,7 +98,7 @@ func (m UserRepo) Patch(ctx context.Context, username, role, email string, passw
 		return domain.ErrNoData
 	}
 	args = append(args, id)
-	query.WriteString(fmt.Sprintf("WHERE id = $%d"))
+	query.WriteString(fmt.Sprintf("WHERE id = $%d", cnt))
 
 	result, err := m.DB.ExecContext(ctx, query.String(), args...)
 

@@ -3,7 +3,6 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"reflect"
 	"time"
 
@@ -21,16 +20,14 @@ func NewRateAndCacheService(repo port.RateAndCacheRepo) RateAndCacheServ {
 func (rc RateAndCacheServ) Increment(ctx context.Context, id string) (int, error) {
 	return rc.repo.Increment(ctx, id)
 }
-func (rc RateAndCacheServ) DecrementBy(ctx context.Context, id string, n int, timeToLive time.Duration) (int, error) {
-	return rc.repo.DecrementBy(ctx, id, n, timeToLive)
+func (rc RateAndCacheServ) Decrement(ctx context.Context, id string) (int, error) {
+	return rc.repo.Decrement(ctx, id)
 }
 
 func (rc RateAndCacheServ) Set(ctx context.Context, name, id, userId string, val any, duration time.Duration) error {
 	if reflect.ValueOf(val).Kind() == reflect.Struct {
 		res, err := json.Marshal(val)
 		if err != nil {
-			fmt.Println(val)
-			fmt.Println(res)
 			return err
 		}
 		return rc.repo.Set(ctx, name, id, userId, res, duration)
