@@ -33,3 +33,9 @@ type SignupUser struct {
 	Email    string
 	Password string
 }
+
+type Message struct {
+	Key   []byte
+	Val   []byte
+	Topic string
+}
