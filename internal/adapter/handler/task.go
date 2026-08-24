@@ -175,7 +175,7 @@ func (t *TaskHandler) List(c *gin.Context) {
 // @Accept json
 // @Produce json
 // @Param tasks body handler.TaskRequest true "task schema for creating a new user"
-// @Success 201 {array} handler.TaskResponse
+// @Success 202 {array}
 // @Failure 400 {object} map[string]string
 // @Failure 401 {object} map[string]string
 // @Failure 500 {object} map[string]string
@@ -191,20 +191,26 @@ func (t *TaskHandler) Post(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
+	serviceData, err := json.Marshal(map[string]any{
+		"title":       taskReq.Title,
+		"text":        taskReq.Text,
+		"priority":    taskReq.Priority,
+		"expire_days": taskReq.ExpireDays,
+		"user_id":     data["id"],
+	})
 
-	err = t.service.Post(c.Request.Context(), &domain.CreateTask{
-		Title:      taskReq.Title,
-		Text:       taskReq.Text,
-		Priority:   taskReq.Priority,
-		ExpireDays: taskReq.ExpireDays,
-	}, data["id"])
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	err = t.broker.Publish(map[string]string{"task-new": string(serviceData)})
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.Redirect(http.StatusCreated, "/tasks")
+	c.Status(http.StatusAccepted)
 }
 
 // @Summary delete task
@@ -227,19 +233,24 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 		return
 	}
 
-	userID := data["id"]
 	taskID := c.Param("id")
+	userID := data["id"]
+	serviceData, err := json.Marshal(map[string]any{
+		"id":      taskID,
+		"role":    data["role"],
+		"user_id": userID,
+	})
 
-	err = t.service.Delete(c.Request.Context(), c.Param("id"), userID, data["role"])
 	if err != nil {
-		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %v", taskID)})
-			return
-		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-
+	key := fmt.Sprintf("task-%s", taskID)
+	err = t.broker.Publish(map[string]string{key: string(serviceData)})
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %v deleted", taskID)})
 
 	err = t.rateAndCacheService.Del(c.Request.Context(), "task", taskID, userID)
@@ -277,24 +288,28 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-
-	err = t.service.Patch(c.Request.Context(), &domain.CreateTask{
-		Title:      taskReq.Title,
-		Text:       taskReq.Text,
-		Priority:   taskReq.Priority,
-		ExpireDays: taskReq.ExpireDays,
-	}, taskID, userID, data["role"])
+	serviceData, err := json.Marshal(map[string]any{
+		"id":          taskID,
+		"title":       taskReq.Title,
+		"text":        taskReq.Text,
+		"priority":    taskReq.Priority,
+		"expire_days": taskReq.ExpireDays,
+		"user_id":     userID,
+		"role":        data["role"],
+	})
 
 	if err != nil {
-		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %v", taskID)})
-			return
-		}
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	err = t.broker.Publish(map[string]string{"task-new": string(serviceData)})
+
+	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %v patched", taskID)})
+	c.Status(http.StatusAccepted)
 
 	err = t.rateAndCacheService.Del(c.Request.Context(), "task", taskID, userID)
 	if err != nil {

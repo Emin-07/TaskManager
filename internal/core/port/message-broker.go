@@ -1,13 +1,15 @@
 package port
 
-import "context"
+import (
+	"context"
+)
 
 type MessageBrokerIn interface {
 	Publish(data map[string]string) error
-	Consume(ctx context.Context, msgsCh chan<- [][]byte) error
+	Consume(ctx context.Context) error
 }
 
 type MessageBrokerOut interface {
 	Publish(data map[string]string) error
-	Consume(ctx context.Context, msgsCh chan<- [][]byte) error
+	Consume(ctx context.Context) error
 }

@@ -34,7 +34,7 @@ func NewKafkaConsumer(topic string) *KafkaConsumer {
 	}
 }
 
-func (kc *KafkaConsumer) Consume(ctx context.Context, msgsCh chan<- domain.Message) error {
+func (kc *KafkaConsumer) Consume(ctx context.Context) error {
 loop:
 	for {
 		select {
@@ -45,18 +45,8 @@ loop:
 			if err != nil {
 				break
 			}
-			//msgsCh <- domain.Message{Key: m.Key, Val: m.Value, Topic: m.Topic}
-			// TODO: after testing, based on topic convert it and send into db
-			switch m.Topic {
-			case "tasks":
-				operation := shared.MsgOperation{}
-				if err = json.Unmarshal(m.Value, &operation); err != nil {
-					return fmt.Errorf("couldn't extract operation from struct: %s", err)
-				}
-			case "users":
-				fmt.Print("Users")
-			default:
-				return fmt.Errorf("unknown topic in message : %s", m.Topic)
+			if err = kc.handleMessage(ctx, m.Value, m.Topic); err != nil {
+				return err
 			}
 			fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 			if err = kc.reader.CommitMessages(ctx, m); err != nil {
