@@ -45,15 +45,22 @@ loop:
 			if err != nil {
 				break
 			}
-			if err = kc.handleMessage(ctx, m.Value, m.Topic); err != nil {
-				return err
+			switch kc.reader.Config().Topic {
+			case domain.TopicUsers:
+				if err = kc.handleUserMessage(ctx, m.Value); err != nil {
+					return err
+				}
+			case domain.TopicTasks:
+				if err = kc.handleTaskMessage(ctx, m.Value); err != nil {
+					return err
+				}
 			}
+
 			fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
 			if err = kc.reader.CommitMessages(ctx, m); err != nil {
 				return err
 			}
 		}
-
 	}
 
 	if err := kc.reader.Close(); err != nil {
@@ -62,86 +69,90 @@ loop:
 	return nil
 }
 
-func (kc *KafkaConsumer) handleMessage(ctx context.Context, data []byte, topic string) error {
+func (kc *KafkaConsumer) handleUserMessage(ctx context.Context, data []byte) error {
 	operation := shared.MsgOperation{}
 	if err := json.Unmarshal(data, &operation); err != nil {
 		return fmt.Errorf("couldn't extract operation from struct: %s", err)
 	}
-	switch topic {
-	case "tasks":
-		switch strings.ToLower(operation.Operation) {
-		case shared.CreateOperation:
-			postData := shared.TaskCreate{}
-			if err := json.Unmarshal(data, &postData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			newTask := &domain.CreateTask{
-				Title:      postData.Title,
-				Text:       postData.Text,
-				Priority:   postData.Priority,
-				ExpireDays: postData.ExpireDays,
-			}
-			return kc.taskServices.Post(ctx, newTask, postData.UserId)
-		case shared.PatchOperation:
-			patchData := shared.TaskPatch{}
-			if err := json.Unmarshal(data, &patchData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			patchedTask := &domain.CreateTask{
-				Title:      patchData.Title,
-				Text:       patchData.Text,
-				Priority:   patchData.Priority,
-				ExpireDays: patchData.ExpireDays,
-			}
-			return kc.taskServices.Patch(ctx, patchedTask, patchData.ID, patchData.UserId, patchData.Role)
-		//case shared.ChangeOperation:
-		//	kc.taskServices.Patch()
-		case shared.DeleteOperation:
-			deleteData := shared.TaskDelete{}
-			if err := json.Unmarshal(data, &deleteData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			return kc.taskServices.Delete(ctx, deleteData.ID, deleteData.UserId, deleteData.Role)
-		default:
-			return fmt.Errorf("unknown operation passed in : %s", operation.Operation)
+
+	switch strings.ToLower(operation.Operation) {
+	case domain.CreateOperation:
+		postData := shared.UserBasic{}
+		if err := json.Unmarshal(data, &postData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
 		}
-	case "users":
-		switch strings.ToLower(operation.Operation) {
-		case shared.CreateOperation:
-			postData := shared.UserBasic{}
-			if err := json.Unmarshal(data, &postData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			newUser := &domain.SignupUser{
-				Username: postData.Username,
-				Role:     postData.Role,
-				Email:    postData.Email,
-				Password: postData.Password,
-			}
-			return kc.userServices.Insert(ctx, newUser)
-		case shared.PatchOperation:
-			patchData := shared.UserPatch{}
-			if err := json.Unmarshal(data, &patchData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			patchedUser := &domain.SignupUser{
-				Username: patchData.Username,
-				Role:     patchData.Role,
-				Email:    patchData.Email,
-				Password: patchData.Password,
-			}
-			return kc.userServices.Patch(ctx, patchedUser, patchData.ID)
-		//case shared.ChangeOperation:
-		//	kc.userServices.Patch()
-		case shared.DeleteOperation:
-			deleteData := shared.UserDelete{}
-			if err := json.Unmarshal(data, &deleteData); err != nil {
-				return fmt.Errorf("couldn't extract data from struct: %s", err)
-			}
-			return kc.userServices.Delete(ctx, deleteData.ID)
-		default:
-			return fmt.Errorf("unknown operation passed in : %s", operation.Operation)
+		newUser := &domain.SignupUser{
+			Username: postData.Username,
+			Role:     postData.Role,
+			Email:    postData.Email,
+			Password: postData.Password,
 		}
+		return kc.userServices.Insert(ctx, newUser)
+	case domain.PatchOperation:
+		patchData := shared.UserPatch{}
+		if err := json.Unmarshal(data, &patchData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
+		}
+		patchedUser := &domain.SignupUser{
+			Username: patchData.Username,
+			Role:     patchData.Role,
+			Email:    patchData.Email,
+			Password: patchData.Password,
+		}
+		return kc.userServices.Patch(ctx, patchedUser, patchData.ID)
+	//case shared.ChangeOperation:
+	//	kc.userServices.Patch()
+	case domain.DeleteOperation:
+		deleteData := shared.UserDelete{}
+		if err := json.Unmarshal(data, &deleteData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
+		}
+		return kc.userServices.Delete(ctx, deleteData.ID)
+	default:
+		return fmt.Errorf("unknown operation passed in : %s", operation.Operation)
 	}
-	return nil
+}
+
+func (kc *KafkaConsumer) handleTaskMessage(ctx context.Context, data []byte) error {
+	operation := shared.MsgOperation{}
+	if err := json.Unmarshal(data, &operation); err != nil {
+		return fmt.Errorf("couldn't extract operation from struct: %s", err)
+	}
+	switch strings.ToLower(operation.Operation) {
+	case domain.CreateOperation:
+		postData := shared.TaskCreate{}
+		if err := json.Unmarshal(data, &postData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
+		}
+		newTask := &domain.CreateTask{
+			Title:      postData.Title,
+			Text:       postData.Text,
+			Priority:   postData.Priority,
+			ExpireDays: postData.ExpireDays,
+		}
+		return kc.taskServices.Post(ctx, newTask, postData.UserId)
+	case domain.PatchOperation:
+		patchData := shared.TaskPatch{}
+		if err := json.Unmarshal(data, &patchData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
+		}
+		patchedTask := &domain.CreateTask{
+			Title:      patchData.Title,
+			Text:       patchData.Text,
+			Priority:   patchData.Priority,
+			ExpireDays: patchData.ExpireDays,
+		}
+		return kc.taskServices.Patch(ctx, patchedTask, patchData.ID, patchData.UserId, patchData.Role)
+	//case shared.ChangeOperation:
+	//	kc.taskServices.Patch()
+	case domain.DeleteOperation:
+		deleteData := shared.TaskDelete{}
+		if err := json.Unmarshal(data, &deleteData); err != nil {
+			return fmt.Errorf("couldn't extract data from struct: %s", err)
+		}
+		return kc.taskServices.Delete(ctx, deleteData.ID, deleteData.UserId, deleteData.Role)
+	default:
+		return fmt.Errorf("unknown operation passed in : %s", operation.Operation)
+	}
+
 }

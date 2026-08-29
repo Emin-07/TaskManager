@@ -17,6 +17,8 @@ import (
 
 	"github.com/Emin-07/TaskManager/cmd/web/docs"
 	"github.com/Emin-07/TaskManager/internal/adapter/handler"
+	"github.com/Emin-07/TaskManager/internal/adapter/kafka/consumer"
+	"github.com/Emin-07/TaskManager/internal/adapter/kafka/producer"
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/postgres"
 	"github.com/Emin-07/TaskManager/internal/adapter/repo/redis"
 	"github.com/Emin-07/TaskManager/internal/app"
@@ -76,8 +78,31 @@ func main() {
 	tokenService := service.NewTokenService(privKeyPath, pubKeyPath)
 	redisService := service.NewRateAndCacheService(redisRepo)
 
-	userHandler := handler.NewUserHandler(userService, tokenService, redisService)
-	taskHandler := handler.NewTaskHandler(taskService, tokenService, redisService)
+	kafkaProducer := producer.NewKafkaProducer()
+	taskConsumer := consumer.NewKafkaConsumer("tasks")
+	userConsumer := consumer.NewKafkaConsumer("users")
+
+	usersBroker := service.NewMessageBrokerService(kafkaProducer, userConsumer)
+	tasksBroker := service.NewMessageBrokerService(kafkaProducer, taskConsumer)
+	usersBrokerCtx, cancel := context.WithCancel(context.Background())
+
+	defer cancel()
+	go func() {
+		if err = usersBroker.Consume(usersBrokerCtx); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	tasksBrokerCtx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		if err = tasksBroker.Consume(tasksBrokerCtx); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	userHandler := handler.NewUserHandler(userService, tokenService, redisService, usersBroker)
+	taskHandler := handler.NewTaskHandler(taskService, tokenService, redisService, tasksBroker)
 
 	application := app.NewApp(app.WithTaskHandler(taskHandler), app.WithUserHandler(userHandler))
 	srv := application.NewServer()

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -57,12 +58,20 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	err := u.service.Insert(c.Request.Context(), &domain.SignupUser{
-		Username: userReq.Username,
-		Role:     userReq.Role,
-		Email:    userReq.Email,
-		Password: userReq.Password,
+
+	serviceData, err := json.Marshal(map[string]any{
+		"username":  userReq.Username,
+		"role":      userReq.Role,
+		"email":     userReq.Email,
+		"password":  userReq.Password,
+		"operation": domain.CreateOperation,
 	})
+
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	err = u.broker.Publish(map[string]string{"user-0": string(serviceData)}, domain.TopicUsers)
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -167,22 +176,27 @@ func (u *UserHandler) Patch(c *gin.Context) {
 		return
 	}
 	id := c.Param("id")
-	err := u.service.Patch(c.Request.Context(), &domain.SignupUser{
-		Username: userReq.Username,
-		Role:     userReq.Role,
-		Email:    userReq.Email,
-		Password: userReq.Password,
-	}, id)
+	serviceData, err := json.Marshal(map[string]any{
+		"username":  userReq.Username,
+		"role":      userReq.Role,
+		"email":     userReq.Email,
+		"password":  userReq.Password,
+		"id":        id,
+		"operation": domain.PatchOperation,
+	})
+
 	if err != nil {
-		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", id)})
-			return
-		}
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
+	key := fmt.Sprintf("user-%s", id)
+	err = u.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicUsers)
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("user with id %d patched", id)})
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	c.Status(http.StatusAccepted)
 }
 
 // @Summary delete user
@@ -200,14 +214,27 @@ func (u *UserHandler) Patch(c *gin.Context) {
 // @Router /users/:id [delete]
 func (u *UserHandler) Delete(c *gin.Context) {
 	id := c.Param("id")
-	if err := u.service.Delete(c.Request.Context(), id); err != nil {
-		if errors.Is(err, domain.ErrNoRecord) {
-			c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %d", id)})
-			return
-		}
+	serviceData, err := json.Marshal(map[string]any{
+		"id":        id,
+		"operation": domain.DeleteOperation,
+	})
+
+	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
+	key := fmt.Sprintf("user-%s", id)
+	err = u.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicUsers)
+	if err != nil {
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
+	//if errors.Is(err, domain.ErrNoRecord) {
+	//	c.JSON(http.StatusNoContent, gin.H{"no content": fmt.Sprintf("there isn't a task with id = %s", id)})
+	//	return
+	//}
+	//c.AbortWithError(http.StatusBadRequest, err)
+	//return
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("user  with id %d deleted", id)})
+	c.Status(http.StatusAccepted)
 }

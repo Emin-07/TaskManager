@@ -10,11 +10,20 @@ type MessageBrokerService struct {
 	broker port.MessageBrokerIn
 }
 
-func (bs *MessageBrokerService) Publish(data map[string]string) error {
-	return bs.broker.Publish(data)
+func NewMessageBrokerService(p port.Publisher, c port.Consumer) MessageBrokerService {
+	type combined struct {
+		port.Publisher
+		port.Consumer
+	}
+	return MessageBrokerService{
+		broker: combined{p, c},
+	}}
+
+func (bs MessageBrokerService) Publish(data map[string]string, topic string) error {
+	return bs.broker.Publish(data, topic)
 }
 
-func (bs *MessageBrokerService) Consume(ctx context.Context) error {
+func (bs MessageBrokerService) Consume(ctx context.Context) error {
 	errs := make(chan error)
 	go func() {
 		err := bs.broker.Consume(ctx)
@@ -31,4 +40,3 @@ func (bs *MessageBrokerService) Consume(ctx context.Context) error {
 		}
 	}
 }
-

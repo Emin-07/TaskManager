@@ -1,28 +1,19 @@
 package shared
 
-const (
-	CreateOperation = "create"
-	ChangeOperation = "put"
-	PatchOperation  = "patch"
-	DeleteOperation = "delete"
-)
+//TODO Delete kafkaconfig, and make receiving addr thru env
 
 type KafkaConfig struct {
-	TaskTopic string
-	UserTopic string
-	Addr      []string
+	Addr []string
 }
 
 func NewKafkaConfig() *KafkaConfig {
 	return &KafkaConfig{
-		TaskTopic: "tasks",
-		UserTopic: "users",
-		Addr:      []string{"localhost:9092"},
+		Addr: []string{"localhost:9092"},
 	}
 }
 
 type MsgOperation struct {
-	Operation string
+	Operation string `json:"operation"`
 }
 
 //type TaskResponse struct {

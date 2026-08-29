@@ -4,12 +4,19 @@ import (
 	"context"
 )
 
-type MessageBrokerIn interface {
-	Publish(data map[string]string) error
+type Publisher interface {
+	Publish(data map[string]string, topic string) error
+}
+type Consumer interface {
 	Consume(ctx context.Context) error
 }
 
+type MessageBrokerIn interface {
+	Publisher
+	Consumer
+}
+
 type MessageBrokerOut interface {
-	Publish(data map[string]string) error
-	Consume(ctx context.Context) error
+	Publisher
+	Consumer
 }

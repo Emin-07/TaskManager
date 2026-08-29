@@ -197,13 +197,14 @@ func (t *TaskHandler) Post(c *gin.Context) {
 		"priority":    taskReq.Priority,
 		"expire_days": taskReq.ExpireDays,
 		"user_id":     data["id"],
+		"operation":   domain.CreateOperation,
 	})
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	err = t.broker.Publish(map[string]string{"task-new": string(serviceData)})
+	err = t.broker.Publish(map[string]string{"task-0": string(serviceData)}, domain.TopicTasks)
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
@@ -236,9 +237,10 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 	taskID := c.Param("id")
 	userID := data["id"]
 	serviceData, err := json.Marshal(map[string]any{
-		"id":      taskID,
-		"role":    data["role"],
-		"user_id": userID,
+		"id":        taskID,
+		"role":      data["role"],
+		"user_id":   userID,
+		"operation": domain.DeleteOperation,
 	})
 
 	if err != nil {
@@ -246,12 +248,12 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 		return
 	}
 	key := fmt.Sprintf("task-%s", taskID)
-	err = t.broker.Publish(map[string]string{key: string(serviceData)})
+	err = t.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicTasks)
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("task with id %v deleted", taskID)})
+	c.Status(http.StatusAccepted)
 
 	err = t.rateAndCacheService.Del(c.Request.Context(), "task", taskID, userID)
 	if err != nil {
@@ -296,13 +298,15 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 		"expire_days": taskReq.ExpireDays,
 		"user_id":     userID,
 		"role":        data["role"],
+		"operation":   domain.PatchOperation,
 	})
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
-	err = t.broker.Publish(map[string]string{"task-new": string(serviceData)})
+	key := fmt.Sprintf("task-%s", taskID)
+	err = t.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicTasks)
 
 	if err != nil {
 		c.AbortWithError(http.StatusBadRequest, err)
