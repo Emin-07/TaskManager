@@ -81,7 +81,7 @@ func (t TaskServ) Post(ctx context.Context, task *domain.CreateTask, userIdStr s
 		return err
 	}
 	if task.Title == "" {
-		return fmt.Errorf("can't create task with title")
+		return fmt.Errorf("can't create task without title")
 	}
 	if userId < 1 {
 		return fmt.Errorf("there is no user with negative or zero id")
