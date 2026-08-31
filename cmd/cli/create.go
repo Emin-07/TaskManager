@@ -21,7 +21,7 @@ func WriteBase() {
 	if err != nil {
 		panic(err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	headers := []string{"Owner", "Task", "Date"}
 	writer := csv.NewWriter(file)
@@ -43,7 +43,7 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		writer := csv.NewWriter(file)
 		defer writer.Flush()
 

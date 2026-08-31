@@ -25,7 +25,7 @@ var readCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader := csv.NewReader(file)
 		data, err := reader.ReadAll()
 		if err != nil {
@@ -46,7 +46,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	readCmd.Flags().StringVarP(&readName, "name", "n", "admin", "Name to read data from")
 
-	readCmd.MarkFlagRequired("name")
+	_ = readCmd.MarkFlagRequired("name")
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// readCmd.PersistentFlags().String("foo", "", "A help for foo")

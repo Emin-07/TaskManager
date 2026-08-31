@@ -6,14 +6,21 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"sync/atomic"
 
 	"github.com/gin-gonic/gin"
 
 	"github.com/Emin-07/TaskManager/internal/core/port"
 )
 
+// requestCounter tracks the total number of served requests across goroutines
+// using an atomic counter, exposed via the X-Total-Requests response header.
+var requestCounter atomic.Int64
+
 func SecureHeaders() gin.HandlerFunc {
 	return func(c *gin.Context) {
+		n := requestCounter.Add(1)
+		c.Header("X-Total-Requests", strconv.FormatInt(n, 10))
 		c.Header("X-Frame-Options", "DENY")
 		c.Header("Content-Security-Policy", "default-src 'self'; connect-src *; font-src *; script-src-elem * 'unsafe-inline'; img-src * data:; style-src * 'unsafe-inline';")
 		c.Header("X-XSS-Protection", "1; mode=block")

@@ -1,4 +1,4 @@
-.PHONY: swag certs env migrate-up migrate-down migrate-status migrate-reset migrate-create
+.PHONY: swag certs env migrate-up migrate-down migrate-status migrate-reset migrate-create test-unit test-integration test-all compose-up compose-down
 
 include .env
 export
@@ -31,3 +31,18 @@ migrate-reset:
 
 migrate-create:
 	goose -dir migrations create $(name) sql
+
+test-unit:
+	go test ./internal/core/... -short
+
+test-integration:
+	go test ./internal/adapter/... -count=1
+
+test-all:
+	go test ./... -count=1
+
+compose-up:
+	docker compose up -d
+
+compose-down:
+	docker compose down

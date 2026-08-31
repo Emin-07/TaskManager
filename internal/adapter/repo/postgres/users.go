@@ -72,25 +72,25 @@ func (m UserRepo) Patch(ctx context.Context, username, role, email string, passw
 	query.WriteString("UPDATE users SET ")
 	if username != "" {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`username = $%d `, cnt))
+		fmt.Fprintf(&query, `username = $%d `, cnt)
 		cnt++
 		args = append(args, username)
 	}
 	if role != "" {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`role = $%d `, cnt))
+		fmt.Fprintf(&query, `role = $%d `, cnt)
 		cnt++
 		args = append(args, role)
 	}
 	if email != "" {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`email = $%d `, cnt))
+		fmt.Fprintf(&query, `email = $%d `, cnt)
 		cnt++
 		args = append(args, email)
 	}
 	if len(passwordHash) != 0 {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`password_hash = $%d `, cnt))
+		fmt.Fprintf(&query, `password_hash = $%d `, cnt)
 		cnt++
 		args = append(args, passwordHash)
 	}
@@ -98,7 +98,7 @@ func (m UserRepo) Patch(ctx context.Context, username, role, email string, passw
 		return domain.ErrNoData
 	}
 	args = append(args, id)
-	query.WriteString(fmt.Sprintf("WHERE id = $%d", cnt))
+	fmt.Fprintf(&query, "WHERE id = $%d", cnt)
 
 	result, err := m.DB.ExecContext(ctx, query.String(), args...)
 
@@ -115,9 +115,29 @@ func (m UserRepo) Patch(ctx context.Context, username, role, email string, passw
 }
 
 func (m UserRepo) Delete(ctx context.Context, id int) error {
-	_, err := m.DB.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
+	// Deleting a user and its tasks must be atomic: if either statement fails
+	// midway we roll back so no orphaned tasks (or a half-removed user) remain.
+	tx, err := m.DB.BeginTxx(ctx, nil)
 	if err != nil {
 		return err
 	}
-	return nil
+
+	if _, err = tx.ExecContext(ctx, "DELETE FROM tasks WHERE user_id = $1", id); err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	result, err := tx.ExecContext(ctx, "DELETE FROM users WHERE id = $1", id)
+	if err != nil {
+		_ = tx.Rollback()
+		return err
+	}
+
+	rows, _ := result.RowsAffected()
+	if rows == 0 {
+		_ = tx.Rollback()
+		return domain.ErrNoRecord
+	}
+
+	return tx.Commit()
 }

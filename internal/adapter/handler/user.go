@@ -28,12 +28,12 @@ import (
 func (u *UserHandler) Authenticate(c *gin.Context) {
 	userToConvert, err := u.service.Authenticate(c.Request.Context(), c.PostForm("email"), c.PostForm("password"))
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	token, err := u.tokenService.CreateToken(strconv.Itoa(userToConvert.ID), userToConvert.Role)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 	var userReq UserRequest
 
 	if err := c.ShouldBindBodyWithJSON(&userReq); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -68,25 +68,25 @@ func (u *UserHandler) SignUp(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	err = u.broker.Publish(map[string]string{"user-0": string(serviceData)}, domain.TopicUsers)
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	data, err := u.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
 	token, err := u.tokenService.CreateToken(data["id"], data["role"])
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -113,7 +113,7 @@ func (u *UserHandler) GetById(c *gin.Context) {
 			c.JSON(http.StatusNotFound, gin.H{"task": fmt.Sprintf("task with %s not found", c.Param("id"))})
 			return
 		}
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"user": UserResponse{
@@ -138,7 +138,7 @@ func (u *UserHandler) GetById(c *gin.Context) {
 func (u *UserHandler) ListUsers(c *gin.Context) {
 	usersToConvert, err := u.service.List(c.Request.Context())
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	var users []*UserResponse
@@ -172,7 +172,7 @@ func (u *UserHandler) Patch(c *gin.Context) {
 	var userReq UserRequest
 
 	if err := c.ShouldBindBodyWithJSON(&userReq); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	id := c.Param("id")
@@ -186,14 +186,14 @@ func (u *UserHandler) Patch(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	key := fmt.Sprintf("user-%s", id)
 	err = u.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicUsers)
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	c.Status(http.StatusAccepted)
@@ -220,13 +220,13 @@ func (u *UserHandler) Delete(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	key := fmt.Sprintf("user-%s", id)
 	err = u.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicUsers)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	//if errors.Is(err, domain.ErrNoRecord) {

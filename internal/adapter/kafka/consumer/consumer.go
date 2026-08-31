@@ -3,14 +3,22 @@ package consumer
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"log"
 	"strings"
+	"sync"
 
 	"github.com/segmentio/kafka-go"
 
 	"github.com/Emin-07/TaskManager/internal/adapter/kafka/shared"
 	"github.com/Emin-07/TaskManager/internal/core/domain"
 	"github.com/Emin-07/TaskManager/internal/core/port"
+)
+
+const (
+	workerCount    = 4
+	jobChannelSize = 64
 )
 
 type KafkaConsumer struct {
@@ -35,38 +43,83 @@ func NewKafkaConsumer(topic string) *KafkaConsumer {
 }
 
 func (kc *KafkaConsumer) Consume(ctx context.Context) error {
-loop:
+	// job channel carries messages from the fetch loop to worker goroutines
+	jobs := make(chan kafka.Message, jobChannelSize)
+	errCh := make(chan error, workerCount)
+
+	var wg sync.WaitGroup
+
+	// start the fixed worker pool
+	for i := 0; i < workerCount; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for msg := range jobs {
+				kc.processMessage(ctx, msg, errCh)
+			}
+		}()
+	}
+
+	// fetch loop (single producer)
+	fetchErr := kc.fetchLoop(ctx, jobs)
+
+	// close jobs so workers drain remaining messages and exit
+	close(jobs)
+	wg.Wait()
+
+	// if fetch loop errored due to context, return context error
+	if ctx.Err() != nil {
+		_ = kc.reader.Close()
+		return ctx.Err()
+	}
+
+	if err := kc.reader.Close(); err != nil && !errors.Is(err, context.Canceled) {
+		return err
+	}
+
+	return fetchErr
+}
+
+func (kc *KafkaConsumer) fetchLoop(ctx context.Context, jobs chan<- kafka.Message) error {
 	for {
 		select {
 		case <-ctx.Done():
-			break loop
+			return ctx.Err()
 		default:
 			m, err := kc.reader.FetchMessage(ctx)
 			if err != nil {
-				break
-			}
-			switch kc.reader.Config().Topic {
-			case domain.TopicUsers:
-				if err = kc.handleUserMessage(ctx, m.Value); err != nil {
+				if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
 					return err
 				}
-			case domain.TopicTasks:
-				if err = kc.handleTaskMessage(ctx, m.Value); err != nil {
-					return err
-				}
+				log.Printf("error fetching message: %v", err)
+				continue
 			}
-
-			fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
-			if err = kc.reader.CommitMessages(ctx, m); err != nil {
-				return err
+			select {
+			case jobs <- m:
+			case <-ctx.Done():
+				return ctx.Err()
 			}
 		}
 	}
+}
 
-	if err := kc.reader.Close(); err != nil {
-		return err
+func (kc *KafkaConsumer) processMessage(ctx context.Context, m kafka.Message, errCh chan<- error) {
+	var err error
+	switch kc.reader.Config().Topic {
+	case domain.TopicUsers:
+		err = kc.handleUserMessage(ctx, m.Value)
+	case domain.TopicTasks:
+		err = kc.handleTaskMessage(ctx, m.Value)
 	}
-	return nil
+	if err != nil {
+		errCh <- fmt.Errorf("couldn't process message at topic/partition/offset %v/%v/%v: %w", m.Topic, m.Partition, m.Offset, err)
+		return
+	}
+
+	log.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+	if err = kc.reader.CommitMessages(ctx, m); err != nil {
+		errCh <- fmt.Errorf("couldn't commit message: %w", err)
+	}
 }
 
 func (kc *KafkaConsumer) handleUserMessage(ctx context.Context, data []byte) error {

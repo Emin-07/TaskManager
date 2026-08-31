@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 	"time"
 
@@ -54,7 +55,7 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	if err := goose.SetDialect("postgres"); err != nil {
 		log.Fatalf("Failed to set goose dialect: %v", err)
@@ -84,20 +85,24 @@ func main() {
 
 	usersBroker := service.NewMessageBrokerService(kafkaProducer, userConsumer)
 	tasksBroker := service.NewMessageBrokerService(kafkaProducer, taskConsumer)
-	usersBrokerCtx, cancel := context.WithCancel(context.Background())
 
-	defer cancel()
+	brokerCtx, cancelBrokers := context.WithCancel(context.Background())
+	defer cancelBrokers()
+
+	var consumerWg sync.WaitGroup
+	consumerWg.Add(2)
+
 	go func() {
-		if err = usersBroker.Consume(usersBrokerCtx); err != nil {
-			log.Println(err)
+		defer consumerWg.Done()
+		if err = usersBroker.Consume(brokerCtx); err != nil && err != context.Canceled {
+			log.Println("users consumer:", err)
 		}
 	}()
 
-	tasksBrokerCtx, cancel := context.WithCancel(context.Background())
-	defer cancel()
 	go func() {
-		if err = tasksBroker.Consume(tasksBrokerCtx); err != nil {
-			log.Println(err)
+		defer consumerWg.Done()
+		if err = tasksBroker.Consume(brokerCtx); err != nil && err != context.Canceled {
+			log.Println("tasks consumer:", err)
 		}
 	}()
 
@@ -124,6 +129,10 @@ func main() {
 	if err = srv.Shutdown(ctx); err != nil {
 		log.Println("Server Shutdown:", err)
 	}
+
+	// stop the kafka consumers and wait for all consumer goroutines to exit.
+	cancelBrokers()
+	consumerWg.Wait()
 
 	log.Println("Server exiting")
 }

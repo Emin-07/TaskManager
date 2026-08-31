@@ -30,7 +30,7 @@ import (
 func (t *TaskHandler) Get(c *gin.Context) {
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
@@ -45,7 +45,7 @@ func (t *TaskHandler) Get(c *gin.Context) {
 				c.JSON(http.StatusNotFound, gin.H{"task": fmt.Sprintf("task with %s not found", taskID)})
 				return
 			}
-			c.AbortWithError(http.StatusBadRequest, err)
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 		task := TaskResponse{
@@ -69,7 +69,7 @@ func (t *TaskHandler) Get(c *gin.Context) {
 	var res TaskResponse
 	err = json.Unmarshal([]byte(taskFromCache), &res)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"task": res})
@@ -99,18 +99,18 @@ func (t *TaskHandler) List(c *gin.Context) {
 	}
 	limitInt, err := strconv.Atoi(limit)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	offsetInt, err := strconv.Atoi(offset)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
@@ -143,7 +143,7 @@ func (t *TaskHandler) List(c *gin.Context) {
 	} else {
 		tasksToConvert, err := t.service.List(c.Request.Context(), limitInt, offsetInt, userID)
 		if err != nil {
-			c.AbortWithError(http.StatusBadRequest, err)
+			_ = c.AbortWithError(http.StatusBadRequest, err)
 			return
 		}
 		var tasks []TaskResponse
@@ -183,12 +183,12 @@ func (t *TaskHandler) List(c *gin.Context) {
 func (t *TaskHandler) Post(c *gin.Context) {
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 	var taskReq TaskRequest
 	if err := c.ShouldBindBodyWithJSON(&taskReq); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	serviceData, err := json.Marshal(map[string]any{
@@ -201,13 +201,13 @@ func (t *TaskHandler) Post(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	err = t.broker.Publish(map[string]string{"task-0": string(serviceData)}, domain.TopicTasks)
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 
@@ -230,7 +230,7 @@ func (t *TaskHandler) Post(c *gin.Context) {
 func (t *TaskHandler) Delete(c *gin.Context) {
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
@@ -244,13 +244,13 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	key := fmt.Sprintf("task-%s", taskID)
 	err = t.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicTasks)
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	c.Status(http.StatusAccepted)
@@ -278,7 +278,7 @@ func (t *TaskHandler) Delete(c *gin.Context) {
 func (t *TaskHandler) Patch(c *gin.Context) {
 	data, err := t.tokenService.ParseFromRequest(c.Request)
 	if err != nil {
-		c.AbortWithError(http.StatusUnauthorized, err)
+		_ = c.AbortWithError(http.StatusUnauthorized, err)
 		return
 	}
 
@@ -287,7 +287,7 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 
 	var taskReq TaskRequest
 	if err := c.ShouldBindBodyWithJSON(&taskReq); err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	serviceData, err := json.Marshal(map[string]any{
@@ -302,14 +302,14 @@ func (t *TaskHandler) Patch(c *gin.Context) {
 	})
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 	key := fmt.Sprintf("task-%s", taskID)
 	err = t.broker.Publish(map[string]string{key: string(serviceData)}, domain.TopicTasks)
 
 	if err != nil {
-		c.AbortWithError(http.StatusBadRequest, err)
+		_ = c.AbortWithError(http.StatusBadRequest, err)
 		return
 	}
 

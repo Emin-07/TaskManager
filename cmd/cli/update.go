@@ -65,7 +65,7 @@ to quickly create a Cobra application.`,
 		if err != nil {
 			panic(err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader := csv.NewReader(file)
 		data, err := reader.ReadAll()
 		if err != nil {
@@ -84,12 +84,12 @@ to quickly create a Cobra application.`,
 
 		var taskToChange int
 		fmt.Print("Which task do you want to update: ")
-		fmt.Scan(&taskToChange)
+		_, _ = fmt.Scan(&taskToChange)
 
 		var tasks [][]string
 
 		if taskToChange > userTaskCount || taskToChange < 0 {
-			myError := fmt.Errorf("Task with id %v doesn't exist, id should be between %v-%v", taskToChange, 0, userTaskCount)
+			myError := fmt.Errorf("task with id %v doesn't exist, id should be between %v-%v", taskToChange, 0, userTaskCount)
 			panic(myError)
 		}
 
@@ -115,7 +115,7 @@ to quickly create a Cobra application.`,
 		}
 
 		writer := csv.NewWriter(fixedFile)
-		writer.WriteAll(tasks)
+		_ = writer.WriteAll(tasks)
 
 	},
 }
@@ -125,7 +125,7 @@ func init() {
 
 	// Here you will define your flags and configuration settings.
 	updateCmd.Flags().StringVarP(&updateName, "name", "n", "", "Name to update task from")
-	updateCmd.MarkFlagRequired("name")
+	_ = updateCmd.MarkFlagRequired("name")
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// updateCmd.PersistentFlags().String("foo", "", "A help for foo")

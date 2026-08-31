@@ -1,14 +1,18 @@
 package shared
 
-//TODO Delete kafkaconfig, and make receiving addr thru env
+import "os"
 
 type KafkaConfig struct {
 	Addr []string
 }
 
 func NewKafkaConfig() *KafkaConfig {
+	broker := os.Getenv("KAFKA_BROKER")
+	if broker == "" {
+		broker = "localhost:9092"
+	}
 	return &KafkaConfig{
-		Addr: []string{"localhost:9092"},
+		Addr: []string{broker},
 	}
 }
 

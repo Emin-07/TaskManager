@@ -23,7 +23,7 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			panic(err)
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 		reader := csv.NewReader(file)
 		data, err := reader.ReadAll()
 		if err != nil {
@@ -42,12 +42,12 @@ var deleteCmd = &cobra.Command{
 
 		var taskToDelete int
 		fmt.Print("Which task do you want to delete: ")
-		fmt.Scan(&taskToDelete)
+		_, _ = fmt.Scan(&taskToDelete)
 
 		var tasks [][]string
 
 		if taskToDelete > userTaskCount || taskToDelete < 0 {
-			myError := fmt.Errorf("Task with id %v doesn't exist, id should be between %v-%v", taskToDelete, 0, userTaskCount)
+			myError := fmt.Errorf("task with id %v doesn't exist, id should be between %v-%v", taskToDelete, 0, userTaskCount)
 			panic(myError)
 		}
 
@@ -63,7 +63,7 @@ var deleteCmd = &cobra.Command{
 
 		writer := csv.NewWriter(fixedFile)
 		defer writer.Flush()
-		writer.WriteAll(tasks)
+		_ = writer.WriteAll(tasks)
 
 	},
 }
@@ -74,7 +74,7 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	deleteCmd.Flags().StringVarP(&deleteName, "name", "n", "", "Name to delete task from")
 
-	deleteCmd.MarkFlagRequired("name")
+	_ = deleteCmd.MarkFlagRequired("name")
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// deleteCmd.PersistentFlags().String("foo", "", "A help for foo")

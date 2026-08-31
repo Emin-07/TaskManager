@@ -60,25 +60,25 @@ func (m TaskRepo) Patch(ctx context.Context, title, text, userRole string, prior
 	query.WriteString("UPDATE tasks SET ")
 	if title != "" {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`title = $%d`, cnt))
+		fmt.Fprintf(&query, `title = $%d`, cnt)
 		cnt++
 		args = append(args, title)
 	}
 	if text != "" {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`text = $%d `, cnt))
+		fmt.Fprintf(&query, `text = $%d `, cnt)
 		cnt++
 		args = append(args, text)
 	}
 	if priority != 0 {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`priority = $%d `, cnt))
+		fmt.Fprintf(&query, `priority = $%d `, cnt)
 		cnt++
 		args = append(args, priority)
 	}
 	if expireDays != 0 {
 		queryOrderTracker(&query, &isNotFirst)
-		query.WriteString(fmt.Sprintf(`expires = CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $%d) `, cnt))
+		fmt.Fprintf(&query, `expires = CURRENT_TIMESTAMP + MAKE_INTERVAL(days => $%d) `, cnt)
 		cnt++
 		args = append(args, expireDays)
 	}
@@ -86,7 +86,7 @@ func (m TaskRepo) Patch(ctx context.Context, title, text, userRole string, prior
 		return domain.ErrNoData
 	}
 	args = append(args, id, userId, userRole)
-	query.WriteString(fmt.Sprintf("WHERE id = $%d AND (user_id = $%d OR $%d = 'admin')", cnt, cnt+1, cnt+2))
+	fmt.Fprintf(&query, "WHERE id = $%d AND (user_id = $%d OR $%d = 'admin')", cnt, cnt+1, cnt+2)
 
 	result, err := m.DB.ExecContext(ctx, query.String(), args...)
 
